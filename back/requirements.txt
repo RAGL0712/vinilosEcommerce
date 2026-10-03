@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+strawberry-graphql[fastapi]
+sqlalchemy
+asyncpg
+python-dotenv
+python-jose
+passlib[argon2]

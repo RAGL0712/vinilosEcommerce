@@ -1,0 +1,10 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Producto from '../islands/Producto.jsx'
+---
+<Layout>
+  <div class="productContainer">
+    <a class="backBtn" href="/">← Volver al catalogo</a>
+    <Producto client:load />
+  </div>
+</Layout>

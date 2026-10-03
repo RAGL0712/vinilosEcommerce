@@ -1,0 +1,9 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Checkout from '../islands/Checkout.jsx'
+---
+<Layout>
+  <div class="productContainer">
+    <Checkout client:load />
+  </div>
+</Layout>

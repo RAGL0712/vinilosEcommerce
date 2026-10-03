@@ -1,0 +1,23 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Hero from '../islands/Hero.jsx'
+import Catalogo from '../islands/Catalogo.jsx'
+---
+<Layout>
+  <Hero client:idle />
+  <Catalogo client:load />
+
+  <section class="info-bar">
+    <div class="info-item">
+      <p class="info-title">ENVIO GRATIS</p>
+      <p class="info-subtitle">En compras a partir de 1800</p>
+    </div>
+    <div class="info-divider"></div>
+    <div class="info-item">
+      <p class="info-title">METODOS DE PAGO</p>
+      <p class="info-subtitle">Mercado Pago / PayPal</p>
+    </div>
+  </section>
+
+  <footer class="footer">Vinillos Practica 6 ©</footer>
+</Layout>
