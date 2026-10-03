@@ -1,6 +1,6 @@
 export const URL_API = import.meta.env.DEV
   ? 'http://localhost:4000/'
-  : 'https://vinilo-api.onrender.com//'
+  : 'https://vinilo-api.onrender.com/'
 export function getSesion() {
   const g = localStorage.getItem('sesion')
   return g ? JSON.parse(g) : null
