@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 strawberry-graphql[fastapi]
-sqlalchemy
+sqlalchemy[asyncio]
 asyncpg
 python-dotenv
 python-jose
