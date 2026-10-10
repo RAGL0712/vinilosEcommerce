@@ -8,7 +8,8 @@ export default function AuthForm({ registro = false }) {
   const [cargando, setCargando] = useState(false)
 
   useEffect(() => {
-    if (getSesion()) location.href = '/'
+    const s = getSesion()
+    if (s) location.href = s.usuario.rol === 'ADMIN' ? '/admin' : '/'
   }, [])
 
   const cambiar = (e) => setForm({ ...form, [e.target.name]: e.target.value })
@@ -23,7 +24,7 @@ export default function AuthForm({ registro = false }) {
       }
       const d = await gql(`mutation { login(datos: { email: "${form.email}", password: "${form.password}" }) { accessToken refreshToken usuario { id nombre email rol } } }`)
       guardarSesion(d.login)
-      location.href = '/'
+      location.href = d.login.usuario.rol === 'ADMIN' ? '/admin' : '/'
     } catch (err) {
       setError(err.message)
       setCargando(false)

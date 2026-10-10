@@ -6,10 +6,11 @@ from resolvers.producto import ProductoQueries, ProductoMutations
 from resolvers.carrito import CarritoQueries, CarritoMutations
 from resolvers.pedido import PedidoQueries, PedidoMutations
 from resolvers.usuario import UsuarioMutations
+from resolvers.estadisticas import EstadisticasQueries
 
 
 @strawberry.type
-class Query(CategoriaQueries, ProductoQueries, CarritoQueries, PedidoQueries):
+class Query(CategoriaQueries, ProductoQueries, CarritoQueries, PedidoQueries, EstadisticasQueries):
     pass
 
 

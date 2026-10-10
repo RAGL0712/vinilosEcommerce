@@ -4,12 +4,16 @@ import { getSesion, gql, cerrarSesion } from '../lib/api.js'
 export default function Nav() {
   const [abierto, setAbierto] = useState(false)
   const [categorias, setCategorias] = useState([])
+  const [esAdmin, setEsAdmin] = useState(false)
+  const [enPanel, setEnPanel] = useState(false)
 
   useEffect(() => {
     if (!getSesion()) {
       location.href = '/login'
       return
     }
+    setEsAdmin(getSesion().usuario.rol === 'ADMIN')
+    setEnPanel(location.pathname.startsWith('/admin'))
     gql('query { obtenerCategorias { id nombre } }')
       .then((d) => setCategorias(d.obtenerCategorias))
       .catch((e) => console.error('Categorias:', e))
@@ -20,7 +24,7 @@ export default function Nav() {
       <header className="topbar">
         <span className="menuIcon" onClick={() => setAbierto(true)}>☰</span>
         <img src="/logo.webp" className="topbarLogo" alt="Logo" />
-        <h1> VINILO </h1>
+        <h1>{enPanel ? 'DASHBOARD' : ' VINILO '}</h1>
         <a className="cartIcon" href="/carrito">
           <img src="https://cdn-icons-png.flaticon.com/512/565/565375.png" alt="Carrito" width="24" height="24" />
         </a>
@@ -34,6 +38,7 @@ export default function Nav() {
         <nav className="sidebarNav">
           <ul>
             <li><a href="/">Home</a></li>
+            {esAdmin && <li><a href="/admin">Admin dashboard</a></li>}
             <li><a href="/carrito">Carrito</a></li>
             <li onClick={cerrarSesion}>Cerrar sesion</li>
           </ul>

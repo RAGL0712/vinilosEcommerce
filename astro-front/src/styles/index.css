@@ -628,3 +628,76 @@ a.primaryBtn {
   clear: both;
   margin-top: 10px;
 }
+
+
+
+
+
+/*          ADMIN DASHBOARD       */
+
+.estadisticasMain {
+  font-family: Arial, sans-serif;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.grid-estadisticas-1 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.grid-estadisticas-2 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.estadisticas1 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 0;
+}
+
+.estadisticas1-box {
+  border: 1px solid #666;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.estadisticas2,.estadisticas3,.estadisticas4,.estadisticas1{
+  border: 2px solid black;
+  box-shadow: 5px 5px 0px;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+
+.estadisticas2:hover,.estadisticas3:hover,.estadisticas4:hover,.estadisticas1:hover{
+  box-shadow: 2px 2px 0px;
+  transform: translate(3px,3px);
+  cursor: pointer;
+}
+
+.estadisticasUsuarios{
+  border-bottom: 1px solid #666;
+  padding: 2%;
+}
+
+
+.estadisticasTitulo{
+  padding-bottom: 5%;
+}
+
+
+.estadisticasI{
+  font-size: x-large;
+  font-weight: 600;
+}
