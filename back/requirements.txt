@@ -6,3 +6,4 @@ asyncpg
 python-dotenv
 python-jose
 passlib[argon2]
+mercadopago

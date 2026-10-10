@@ -14,16 +14,16 @@ export default function Checkout() {
 
   const cambiar = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
-  const enviar = async (e) => {
+    const enviar = async (e) => {
     e.preventDefault()
     setEnviando(true)
     const lineas = cart.map((i) => `{ productoId: "${i.id}", cantidad: ${i.quantity} }`).join(', ')
     try {
-      await gqlAuth(`mutation { crearPedido(datos: { nombreCliente: "${form.nombre}", email: "${form.email}", direccion: "${form.direccion}", lineas: [${lineas}] }) { id } }`)
-      await gqlAuth('mutation { vaciarCarrito }')
-      setListo(true)
-    } catch {
-      alert('Error')
+      const d = await gqlAuth(`mutation { crearPedido(datos: { nombreCliente: "${form.nombre}", email: "${form.email}", direccion: "${form.direccion}", lineas: [${lineas}] }) { id } }`)
+      const p = await gqlAuth(`mutation { crearPreferenciaPago(pedidoId: "${d.crearPedido.id}") }`)
+      location.href = p.crearPreferenciaPago
+    } catch (err) {
+      alert('Error: ' + err.message)
       setEnviando(false)
     }
   }

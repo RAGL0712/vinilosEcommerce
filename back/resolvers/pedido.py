@@ -122,11 +122,6 @@ class PedidoMutations:
                     },
                 )
 
-            await conn.execute(
-                text("DELETE FROM items_carrito WHERE carrito_id IN (SELECT id FROM carritos WHERE usuario_id = :usuario)"),
-                {"usuario": usuarioId},
-            )
-
         pedidoCreado = await consultar("SELECT * FROM pedidos WHERE id = :id", {"id": pedidoId})
         return crear_pedido(pedidoCreado[0])
 
