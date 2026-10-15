@@ -1,5 +1,8 @@
 import os
+import uuid
 import asyncio
+from typing import Optional
+
 import strawberry
 import mercadopago
 from dotenv import load_dotenv
@@ -10,84 +13,105 @@ from auth import requerir_usuario
 load_dotenv()
 
 sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
-FRONT_URL = os.getenv("FRONT_URL")
 BACK_URL = os.getenv("BACK_URL")
 
-
-@strawberry.type
-class PagoMutations:
-    @strawberry.field
-    async def crearPreferenciaPago(self, info: strawberry.Info, pedidoId: strawberry.ID) -> str:
-        usuarioId = requerir_usuario(info)["usuario_id"]
-
-        pedidos = await consultar(
-            "SELECT * FROM pedidos WHERE id = :id AND usuario_id = :usuario",
-            {"id": int(pedidoId), "usuario": usuarioId},
-        )
-        if not pedidos:
-            raise Exception("Pedido no encontrado")
-        pedido = pedidos[0]
-        if pedido["status"] != "PENDIENTE":
-            raise Exception("Este pedido ya fue procesado")
-
-        lineas = await consultar(
-            """SELECT d.cantidad, d.precio_unitario, p.titulo, p.artista
-               FROM detalle_pedido d JOIN productos p ON p.id = d.producto_id
-               WHERE d.pedido_id = :id ORDER BY d.id""",
-            {"id": int(pedidoId)},
-        )
-
-        items = [
-            {
-                "title": f"{l['titulo']} - {l['artista']}",
-                "quantity": int(l["cantidad"]),
-                "unit_price": float(l["precio_unitario"]),
-                "currency_id": "MXN",
-            }
-            for l in lineas
-        ]
-        # Misma regla que el front: envio gratis desde 1800
-        if float(pedido["total"]) < 1800:
-            items.append({"title": "Envio", "quantity": 1, "unit_price": 150.0, "currency_id": "MXN"})
-
-        datos = {
-            "items": items,
-            "external_reference": str(pedido["id"]),
-            "back_urls": {
-                "success": f"{FRONT_URL}/pago",
-                "failure": f"{FRONT_URL}/pago",
-                "pending": f"{FRONT_URL}/pago",
-            },
-            "auto_return": "approved",
-            "notification_url": f"{BACK_URL}/webhook/mercadopago",
-        }
-
-        resultado = await asyncio.to_thread(sdk.preference().create, datos)
-        if resultado["status"] not in (200, 201):
-            print("Error Mercado Pago:", resultado["response"])
-            raise Exception("No se pudo crear el pago")
-
-        return resultado["response"]["init_point"]
+MENSAJES = {
+    "accredited": "¡Pago aprobado! Gracias por tu compra.",
+    "pending_contingency": "Tu pago se está procesando.",
+    "pending_review_manual": "Tu pago está en revisión.",
+    "cc_rejected_insufficient_amount": "Fondos insuficientes.",
+    "cc_rejected_bad_filled_security_code": "Código de seguridad inválido.",
+    "cc_rejected_bad_filled_date": "Fecha de vencimiento inválida.",
+    "cc_rejected_bad_filled_other": "Revisa los datos de la tarjeta.",
+    "cc_rejected_call_for_authorize": "Debes autorizar el pago con tu banco.",
+}
 
 
-async def procesar_pago(pago_id):
-    resultado = await asyncio.to_thread(sdk.payment().get, pago_id)
-    if resultado["status"] != 200:
-        return
+def total_con_envio(total):
+    return total + (0 if total >= 1800 else 150)
 
-    pago = resultado["response"]
-    pedido_id = pago.get("external_reference")
-    if not pedido_id or pago.get("status") != "approved":
-        return
 
+async def marcar_pagado(pedido_id):
     actualizados = await ejecutar(
         "UPDATE pedidos SET status = 'PAGADO' WHERE id = :id AND status = 'PENDIENTE' RETURNING id",
         {"id": int(pedido_id)},
     )
-    # Vaciar el carrito solo la primera vez que llega la notificacion
     if actualizados:
         await ejecutar(
             """DELETE FROM items_carrito WHERE carrito_id IN (
                  SELECT c.id FROM carritos c JOIN pedidos p ON p.usuario_id = c.usuario_id WHERE p.id = :id)""",
             {"id": int(pedido_id)},
         )
+
+
+@strawberry.type
+class ResultadoPago:
+    status: str
+    detalle: str
+
+
+@strawberry.input
+class PagoInput:
+    pedidoId: strawberry.ID
+    token: str
+    paymentMethodId: str
+    email: str
+    installments: int = 1
+    issuerId: Optional[str] = None
+
+
+@strawberry.type
+class PagoMutations:
+    @strawberry.field
+    async def pagarPedido(self, info: strawberry.Info, datos: PagoInput) -> ResultadoPago:
+        usuarioId = requerir_usuario(info)["usuario_id"]
+
+        pedidos = await consultar(
+            "SELECT * FROM pedidos WHERE id = :id AND usuario_id = :usuario",
+            {"id": int(datos.pedidoId), "usuario": usuarioId},
+        )
+        if not pedidos:
+            raise Exception("Pedido no encontrado")
+        pedido = pedidos[0]
+        if pedido["status"] != "PENDIENTE":
+            raise Exception("Este pedido ya fue pagado")
+
+        pago = {
+            "transaction_amount": total_con_envio(float(pedido["total"])),
+            "token": datos.token,
+            "description": f"Pedido #{pedido['id']} - Vinilo",
+            "installments": datos.installments,
+            "payment_method_id": datos.paymentMethodId,
+            "payer": {"email": datos.email},
+            "external_reference": str(pedido["id"]),
+            "notification_url": f"{BACK_URL}/webhook/mercadopago",
+        }
+        if datos.issuerId:
+            pago["issuer_id"] = datos.issuerId
+
+        opciones = mercadopago.config.RequestOptions()
+        opciones.custom_headers = {"x-idempotency-key": str(uuid.uuid4())}
+
+        resultado = await asyncio.to_thread(sdk.payment().create, pago, opciones)
+        respuesta = resultado["response"]
+        if resultado["status"] not in (200, 201):
+            print("Error Mercado Pago:", respuesta)
+            raise Exception(f"No se pudo procesar el pago: {respuesta.get('message', '')}")
+
+        status = respuesta.get("status", "")
+        detalle = respuesta.get("status_detail", "")
+        if status == "approved":
+            await marcar_pagado(pedido["id"])
+
+        mensaje = MENSAJES.get(detalle, "El pago fue rechazado. Intenta con otra tarjeta.")
+        return ResultadoPago(status=status, detalle=mensaje)
+
+
+async def procesar_pago(pago_id):
+    resultado = await asyncio.to_thread(sdk.payment().get, pago_id)
+    if resultado["status"] != 200:
+        return
+    pago = resultado["response"]
+    pedido_id = pago.get("external_reference")
+    if pedido_id and pago.get("status") == "approved":
+        await marcar_pagado(pedido_id)

@@ -2,9 +2,14 @@
   "name": "ecommerce-astro",
   "type": "module",
   "private": true,
-  "scripts": { "dev": "astro dev", "build": "astro build", "preview": "astro preview" },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
   "dependencies": {
     "@astrojs/react": "^4.0.0",
+    "@mercadopago/sdk-react": "^1.0.7",
     "astro": "^5.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
