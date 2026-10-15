@@ -6,6 +6,7 @@ export default function Nav() {
   const [categorias, setCategorias] = useState([])
   const [esAdmin, setEsAdmin] = useState(false)
   const [enPanel, setEnPanel] = useState(false)
+  const [notificacion, setNotificacion] = useState(false)
 
   useEffect(() => {
     if (!getSesion()) {
@@ -18,7 +19,13 @@ export default function Nav() {
       .then((d) => setCategorias(d.obtenerCategorias))
       .catch((e) => console.error('Categorias:', e))
   }, [])
-
+  useEffect(() => {
+    if (location.pathname.startsWith('/carrito')) localStorage.removeItem('carritoNuevo')
+    const revisar = () => setNotificacion(localStorage.getItem('carritoNuevo') === '1')
+    revisar()
+    window.addEventListener('carrito-nuevo', revisar)
+    return () => window.removeEventListener('carrito-nuevo', revisar)
+  }, [])
   return (
     <>
       <header className="topbar">
@@ -27,6 +34,10 @@ export default function Nav() {
         <h1>{enPanel ? 'DASHBOARD' : ' VINILO '}</h1>
         <a className="cartIcon" href="/carrito">
           <img src="https://cdn-icons-png.flaticon.com/512/565/565375.png" alt="Carrito" width="24" height="24" />
+          <a className="cartIcon" href="/carrito">
+          <img src="https://cdn-icons-png.flaticon.com/512/565/565375.png" alt="Carrito" width="24" height="24" />
+          {notificacion && <span className="cartDot" />}
+        </a>
         </a>
       </header>
 
