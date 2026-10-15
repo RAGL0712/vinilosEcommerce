@@ -34,10 +34,7 @@ export default function Nav() {
         <h1>{enPanel ? 'DASHBOARD' : ' VINILO '}</h1>
         <a className="cartIcon" href="/carrito">
           <img src="https://cdn-icons-png.flaticon.com/512/565/565375.png" alt="Carrito" width="24" height="24" />
-          <a className="cartIcon" href="/carrito">
-          <img src="https://cdn-icons-png.flaticon.com/512/565/565375.png" alt="Carrito" width="24" height="24" />
           {notificacion && <span className="cartDot" />}
-        </a>
         </a>
       </header>
 
