@@ -14,8 +14,8 @@ export default function Carrito() {
   const ejecutar = async (query) => {
     try {
       await gqlAuth(query)
-    } catch (e) {
-      setError(e.message)
+       } catch (e) {
+      alert(e.message)
     }
     cargar()
   }

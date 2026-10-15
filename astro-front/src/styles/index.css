@@ -701,3 +701,36 @@ a.primaryBtn {
   font-size: x-large;
   font-weight: 600;
 }
+
+/*          CONTADOR PRODUCTO       */
+.contadorProducto {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+.contadorProducto button {
+  width: 48px;
+  height: 48px;
+  font-size: x-large;
+  background-color: black;
+  color: white;
+  border: 2px solid black;
+  border-radius: 10px;
+  box-shadow: 3px 3px 0px #888;
+  cursor: pointer;
+}
+.contadorProducto button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.contadorProducto span {
+  font-size: xx-large;
+  min-width: 2ch;
+  text-align: center;
+}
+.contadorAviso {
+  margin-top: 0.5rem;
+  color: #555;
+}

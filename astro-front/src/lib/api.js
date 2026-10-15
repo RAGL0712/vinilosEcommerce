@@ -59,6 +59,7 @@ export async function cerrarSesion() {
   if (s) {
     try { await gql(`mutation { logout(refreshToken: "${s.refreshToken}") }`) } catch {}
   }
+  localStorage.removeItem('carritoNuevo')
   localStorage.removeItem('sesion')
   location.href = '/login'
 }
@@ -73,4 +74,9 @@ export async function obtenerCarrito() {
     cover: i.imagen_url,
     quantity: Number(i.cantidad),
   }))
+}
+// Avisa al Nav que se agregó algo al carrito 
+export function marcarCarritoNuevo() {
+  localStorage.setItem('carritoNuevo', '1')
+  window.dispatchEvent(new Event('carrito-nuevo'))
 }
