@@ -39,29 +39,31 @@ async def crear_sesion(f):
 
 # MUTATIONS
 
-@strawberry.field
-async def crearUsuario(self, datos: "UsuarioInput") -> Usuario:
-    email = datos.email.strip().lower()
+@strawberry.type
+class UsuarioMutations:
+    @strawberry.field
+    async def crearUsuario(self, datos: "UsuarioInput") -> Usuario:
+        email = datos.email.strip().lower()
 
-    existe = await consultar("SELECT id FROM usuarios WHERE LOWER(email) = :email", {"email": email})
-    if existe:
-        raise Exception("este correo ya esta en uso!")
+        existe = await consultar("SELECT id FROM usuarios WHERE LOWER(email) = :email", {"email": email})
+        if existe:
+            raise Exception("este correo ya esta en uso!")
 
-    filas = await ejecutar(
+        filas = await ejecutar(
             "INSERT INTO usuarios (nombre, email, password) VALUES (:nombre, :email, :password) RETURNING *",
             {"nombre": datos.nombre, "email": email, "password": pwd_context.hash(datos.password)},
         )
-    return crear_usuario(filas[0])
+        return crear_usuario(filas[0])
 
-@strawberry.field
-async def login(self, datos: "LoginInput") -> Sesion:
+    @strawberry.field
+    async def login(self, datos: "LoginInput") -> Sesion:
         filas = await consultar("SELECT * FROM usuarios WHERE email = :email", {"email": datos.email.lower()})
         if len(filas) == 0 or not pwd_context.verify(datos.password, filas[0]["password"]):
             raise Exception("Correo o contrasena incorrectos")
         return await crear_sesion(filas[0])
 
-@strawberry.field
-async def refrescarToken(self, refreshToken: str) -> Sesion:
+    @strawberry.field
+    async def refrescarToken(self, refreshToken: str) -> Sesion:
         datos = decodificar(refreshToken)
         if datos is None or datos.get("tipo") != "refresh":
             raise Exception("Refresh token invalido")
@@ -79,8 +81,8 @@ async def refrescarToken(self, refreshToken: str) -> Sesion:
         usuarios = await consultar("SELECT * FROM usuarios WHERE id = :id", {"id": datos["usuario_id"]})
         return await crear_sesion(usuarios[0])
 
-@strawberry.field
-async def logout(self, refreshToken: str) -> bool:
+    @strawberry.field
+    async def logout(self, refreshToken: str) -> bool:
         datos = decodificar(refreshToken)
         if datos is None or datos.get("tipo") != "refresh":
             raise Exception("Refresh token invalido")
