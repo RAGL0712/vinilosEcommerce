@@ -57,8 +57,7 @@ export default function Checkout() {
   if (resultado && ['approved', 'in_process', 'pending'].includes(resultado.status)) {
     return (
       <div style={{ textAlign: 'center', padding: '5rem 2rem' }}>
-        <h1>{resultado.status === 'approved' ? '¡Pago aprobado!' : 'Pago en proceso'}</h1>
-        <p style={{ margin: '1rem 0 2rem' }}>{resultado.detalle}</p>
+        <h1 style={{ marginBottom: '2rem' }}>{resultado.detalle}</h1>
         <a className="backBtn" href="/">Seguir comprando</a>
       </div>
     )

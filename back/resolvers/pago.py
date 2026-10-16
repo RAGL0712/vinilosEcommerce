@@ -14,16 +14,35 @@ load_dotenv()
 MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN")
 MP_API = "https://api.mercadopago.com/v1/orders"
 
-MENSAJES = {
-    "accredited": "¡Pago aprobado! Gracias por tu compra.",
-    "in_review": "Tu pago está en revisión.",
-    "pending_review_manual": "Tu pago está en revisión.",
-    "insufficient_amount": "Fondos insuficientes.",
-    "bad_filled_security_code": "Código de seguridad inválido.",
-    "bad_filled_date": "Fecha de vencimiento inválida.",
-    "bad_filled_other": "Revisa los datos de la tarjeta.",
-    "call_for_authorize": "Debes autorizar el pago con tu banco.",
-}
+def mensaje_pago(detalle):
+    d = (detalle or "").lower()
+    reglas = [
+        ("accredited", "Pago aprobado"),
+        ("contingency", "Pendiente de pago"),
+        ("pending", "Pendiente de pago"),
+        ("review", "Pendiente de pago"),
+        ("call_for_authorize", "Rechazado con validación para autorizar"),
+        ("insufficient", "Rechazado por importe insuficiente"),
+        ("security_code", "Rechazado por código de seguridad inválido"),
+        ("card_number", "Rechazado por falta de card_number"),
+        ("date", "Rechazado debido a un problema de fecha de vencimiento"),
+        ("expir", "Rechazado debido a un problema de fecha de vencimiento"),
+        ("bad_filled", "Rechazado debido a un error de formulario"),
+        ("installments", "Rechazado por cuotas invalidas"),
+        ("duplicated", "Rechazado por pago duplicado"),
+        ("disabled", "Rechazado por tarjeta deshabilitada"),
+        ("card_type", "Rechazado por tipo de tarjeta no permitida"),
+        ("not_allowed", "Rechazado por tipo de tarjeta no permitida"),
+        ("attempts", "Rechazado debido a intentos excedidos del pin de la tarjeta"),
+        ("blacklist", "Rechazado por estar en lista negra"),
+        ("unsupported", "No soportado"),
+        ("not_supported", "No soportado"),
+        ("amount", "Usado para aplicar regla de montos"),
+    ]
+    for clave, texto in reglas:
+        if clave in d:
+            return texto
+    return "Rechazado por error general"
 
 
 def total_con_envio(total):
@@ -125,15 +144,16 @@ class PagoMutations:
         pagos = order.get("transactions", {}).get("payments", [])
         detalle = pagos[0].get("status_detail", "") if pagos else order.get("status_detail", "")
 
+        print("Mercado Pago:", codigo, order.get("status"), detalle)
+
         if order["status"] == "processed":
             await marcar_pagado(pedido["id"])
-            return ResultadoPago(status="approved", detalle=MENSAJES["accredited"])
-        if order["status"] in ("action_required", "in_review", "in_process"):
-            return ResultadoPago(status="in_process", detalle=MENSAJES.get(detalle, "Tu pago se está procesando."))
+            return ResultadoPago(status="approved", detalle="Pago aprobado")
+        if order["status"] in ("action_required", "in_review", "in_process", "processing", "pending"):
+            mensaje = mensaje_pago(detalle)
+            return ResultadoPago(status="in_process", detalle=mensaje if mensaje != "Rechazado por error general" else "Pendiente de pago")
 
-        print("Pago rechazado:", codigo, order.get("status"), detalle)
-        return ResultadoPago(status="rejected", detalle=MENSAJES.get(detalle, "El pago fue rechazado. Intenta con otra tarjeta."))
-
+        return ResultadoPago(status="rejected", detalle=mensaje_pago(detalle))
 
 async def procesar_order(order_id):
     codigo, order = await asyncio.to_thread(_obtener_order, order_id)
