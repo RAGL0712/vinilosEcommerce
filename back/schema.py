@@ -8,6 +8,8 @@ from resolvers.pedido import PedidoQueries, PedidoMutations
 from resolvers.usuario import UsuarioMutations
 from resolvers.estadisticas import EstadisticasQueries
 from resolvers.pago import PagoMutations
+from resolvers.admin import AdminMutations, AdminSubscriptions
+
 
 @strawberry.type
 class Query(CategoriaQueries, ProductoQueries, CarritoQueries, PedidoQueries, EstadisticasQueries):
@@ -15,9 +17,13 @@ class Query(CategoriaQueries, ProductoQueries, CarritoQueries, PedidoQueries, Es
 
 
 @strawberry.type
-class Mutation(UsuarioMutations, ProductoMutations, CarritoMutations, PedidoMutations, PagoMutations):
+class Mutation(UsuarioMutations, ProductoMutations, CarritoMutations, PedidoMutations, PagoMutations, AdminMutations):
     pass
 
 
-schema = strawberry.Schema(query=Query, mutation=Mutation, config=StrawberryConfig(auto_camel_case=False))
+@strawberry.type
+class Subscription(AdminSubscriptions):
+    pass
 
+
+schema = strawberry.Schema(query=Query, mutation=Mutation, subscription=Subscription, config=StrawberryConfig(auto_camel_case=False))

@@ -80,3 +80,39 @@ export function marcarCarritoNuevo() {
   localStorage.setItem('carritoNuevo', '1')
   window.dispatchEvent(new Event('carrito-nuevo'))
 }
+
+
+
+
+// Suscripción GraphQL por WebSocket. Devuelve una función para cancelarla.
+export function suscribir(query, onData, onError) {
+  let ws
+  let cerrado = false
+  const abrir = () => {
+    const s = getSesion()
+    if (!s) return
+    ws = new WebSocket(URL_API.replace(/^http/, 'ws'), 'graphql-transport-ws')
+    ws.onopen = () =>
+      ws.send(JSON.stringify({ type: 'connection_init', payload: { Authorization: 'Bearer ' + s.accessToken } }))
+    ws.onmessage = async (e) => {
+      const m = JSON.parse(e.data)
+      if (m.type === 'connection_ack') {
+        ws.send(JSON.stringify({ id: '1', type: 'subscribe', payload: { query } }))
+      } else if (m.type === 'ping') {
+        ws.send(JSON.stringify({ type: 'pong' }))
+      } else if (m.type === 'next' && m.payload?.data) {
+        onData(m.payload.data)
+      } else if (e.data.includes('TOKEN_EXPIRADO')) {
+        ws.onclose = null
+        ws.close()
+        await refrescar()
+        if (!cerrado) abrir()
+      } else if (m.type === 'error' || m.payload?.errors) {
+        onError(JSON.stringify(m.payload))
+      }
+    }
+    ws.onclose = () => { if (!cerrado) setTimeout(() => !cerrado && abrir(), 3000) }
+  }
+  abrir()
+  return () => { cerrado = true; ws && ws.close() }
+}

@@ -66,10 +66,7 @@ class ProductoQueries:
 
 @strawberry.type
 class ProductoMutations:
-    # --- CRUD de productos ---
-    # No se llaman todavia desde el frontend (el catalogo solo lee
-    # productos), pero quedan listas para administrar el catalogo
-    # desde un panel de administracion o Apollo Sandbox.
+    # --- CRUD de productos (lo usa el backoffice) ---
     @strawberry.field
     async def crearProducto(self, info: strawberry.Info, datos: "ProductoInput") -> Optional[Producto]:
         requerir_admin(info)
@@ -114,6 +111,8 @@ class ProductoMutations:
     @strawberry.field
     async def eliminarProducto(self, info: strawberry.Info, id: strawberry.ID) -> bool:
         requerir_admin(info)
+        if await consultar("SELECT 1 FROM detalle_pedido WHERE producto_id = :id LIMIT 1", {"id": int(id)}):
+            raise Exception("No se puede eliminar: el producto tiene ventas")
         await ejecutar("DELETE FROM productos WHERE id = :id", {"id": int(id)})
         return True
 

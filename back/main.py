@@ -1,18 +1,19 @@
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
-from resolvers.pago import procesar_order
 
 from schema import schema
 from jwt_service import decodificar
+import resolvers.pago as pago
 
 
-async def get_context(request: Request):
+# request existe en peticiones HTTP y ws en conexiones WebSocket (subscriptions del backoffice)
+async def get_context(request: Request = None, ws: WebSocket = None):
     usuario = None
     expirado = False
 
-    header = request.headers.get("Authorization")
+    header = request.headers.get("Authorization") if request else None
     if header and header.startswith("Bearer "):
         datos = decodificar(header[7:])
         if datos is None:
@@ -27,6 +28,8 @@ app = FastAPI(title="Vinillos Ecommerce")
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+
+# Webhook de Mercado Pago: funciona con la API de Orders (type=order) o con la de Payments (type=payment)
 @app.post("/webhook/mercadopago")
 async def webhook_mercadopago(request: Request):
     params = request.query_params
@@ -35,19 +38,21 @@ async def webhook_mercadopago(request: Request):
     except Exception:
         body = {}
 
-    tipo = body.get("type") or params.get("type")
-    order_id = (body.get("data") or {}).get("id") or params.get("data.id")
+    tipo = body.get("type") or params.get("type") or params.get("topic")
+    recurso_id = (body.get("data") or {}).get("id") or params.get("data.id") or params.get("id")
 
-    if tipo == "order" and order_id:
-        try:
-            await procesar_order(order_id)
-        except Exception as e:
-            print("Error en webhook:", e)
+    try:
+        if tipo == "order" and recurso_id and hasattr(pago, "procesar_order"):
+            await pago.procesar_order(recurso_id)
+        elif tipo == "payment" and recurso_id and hasattr(pago, "procesar_pago"):
+            await pago.procesar_pago(recurso_id)
+    except Exception as e:
+        print("Error en webhook:", e)
 
     return {"ok": True}
+
 
 app.include_router(GraphQLRouter(schema, path="/", context_getter=get_context))
 
 if __name__ == '__main__':
     uvicorn.run("main:app", host="localhost", port=4000, reload=True)
-

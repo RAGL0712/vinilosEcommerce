@@ -47,6 +47,7 @@ export default function Nav() {
           <ul>
             <li><a href="/">Home</a></li>
             {esAdmin && <li><a href="/admin">Admin dashboard</a></li>}
+            {esAdmin && <li><a href="/backoffice">Backoffice</a></li>}
             <li><a href="/carrito">Carrito</a></li>
             <li onClick={cerrarSesion}>Cerrar sesion</li>
           </ul>
