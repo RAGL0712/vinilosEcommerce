@@ -1,10 +1,9 @@
 import os
 import uuid
 import asyncio
-from typing import Optional
 
+import requests
 import strawberry
-import mercadopago
 from dotenv import load_dotenv
 
 from db import consultar, ejecutar
@@ -12,23 +11,40 @@ from auth import requerir_usuario
 
 load_dotenv()
 
-sdk = mercadopago.SDK(os.getenv("MP_ACCESS_TOKEN"))
-BACK_URL = os.getenv("BACK_URL")
+MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN")
+MP_API = "https://api.mercadopago.com/v1/orders"
 
 MENSAJES = {
     "accredited": "¡Pago aprobado! Gracias por tu compra.",
-    "pending_contingency": "Tu pago se está procesando.",
+    "in_review": "Tu pago está en revisión.",
     "pending_review_manual": "Tu pago está en revisión.",
-    "cc_rejected_insufficient_amount": "Fondos insuficientes.",
-    "cc_rejected_bad_filled_security_code": "Código de seguridad inválido.",
-    "cc_rejected_bad_filled_date": "Fecha de vencimiento inválida.",
-    "cc_rejected_bad_filled_other": "Revisa los datos de la tarjeta.",
-    "cc_rejected_call_for_authorize": "Debes autorizar el pago con tu banco.",
+    "insufficient_amount": "Fondos insuficientes.",
+    "bad_filled_security_code": "Código de seguridad inválido.",
+    "bad_filled_date": "Fecha de vencimiento inválida.",
+    "bad_filled_other": "Revisa los datos de la tarjeta.",
+    "call_for_authorize": "Debes autorizar el pago con tu banco.",
 }
 
 
 def total_con_envio(total):
     return total + (0 if total >= 1800 else 150)
+
+
+def _headers(idempotente=False):
+    h = {"Authorization": f"Bearer {MP_ACCESS_TOKEN}", "Content-Type": "application/json"}
+    if idempotente:
+        h["X-Idempotency-Key"] = str(uuid.uuid4())
+    return h
+
+
+def _crear_order(cuerpo):
+    r = requests.post(MP_API, json=cuerpo, headers=_headers(idempotente=True), timeout=30)
+    return r.status_code, r.json()
+
+
+def _obtener_order(order_id):
+    r = requests.get(f"{MP_API}/{order_id}", headers=_headers(), timeout=30)
+    return r.status_code, r.json()
 
 
 async def marcar_pagado(pedido_id):
@@ -55,9 +71,9 @@ class PagoInput:
     pedidoId: strawberry.ID
     token: str
     paymentMethodId: str
+    paymentTypeId: str
     email: str
     installments: int = 1
-    issuerId: Optional[str] = None
 
 
 @strawberry.type
@@ -76,42 +92,52 @@ class PagoMutations:
         if pedido["status"] != "PENDIENTE":
             raise Exception("Este pedido ya fue pagado")
 
-        pago = {
-            "transaction_amount": total_con_envio(float(pedido["total"])),
-            "token": datos.token,
-            "description": f"Pedido #{pedido['id']} - Vinilo",
-            "installments": datos.installments,
-            "payment_method_id": datos.paymentMethodId,
-            "payer": {"email": datos.email},
+        monto = f"{total_con_envio(float(pedido['total'])):.2f}"
+        cuerpo = {
+            "type": "online",
+            "processing_mode": "automatic",
+            "total_amount": monto,
             "external_reference": str(pedido["id"]),
-            "notification_url": f"{BACK_URL}/webhook/mercadopago",
+            "payer": {"email": datos.email},
+            "transactions": {
+                "payments": [
+                    {
+                        "amount": monto,
+                        "payment_method": {
+                            "id": datos.paymentMethodId,
+                            "type": datos.paymentTypeId,
+                            "token": datos.token,
+                            "installments": datos.installments,
+                        },
+                    }
+                ]
+            },
         }
-        if datos.issuerId:
-            pago["issuer_id"] = datos.issuerId
 
-        opciones = mercadopago.config.RequestOptions()
-        opciones.custom_headers = {"x-idempotency-key": str(uuid.uuid4())}
+        codigo, respuesta = await asyncio.to_thread(_crear_order, cuerpo)
 
-        resultado = await asyncio.to_thread(sdk.payment().create, pago, opciones)
-        respuesta = resultado["response"]
-        if resultado["status"] not in (200, 201):
-            print("Error Mercado Pago:", respuesta)
-            raise Exception(f"No se pudo procesar el pago: {respuesta.get('message', '')}")
+        # Un rechazo puede llegar como 201 con status "failed" o como error con la order en "data"
+        order = respuesta.get("data", respuesta) if isinstance(respuesta, dict) else {}
+        if "status" not in order:
+            print("Error Mercado Pago:", codigo, respuesta)
+            raise Exception("No se pudo procesar el pago")
 
-        status = respuesta.get("status", "")
-        detalle = respuesta.get("status_detail", "")
-        if status == "approved":
+        pagos = order.get("transactions", {}).get("payments", [])
+        detalle = pagos[0].get("status_detail", "") if pagos else order.get("status_detail", "")
+
+        if order["status"] == "processed":
             await marcar_pagado(pedido["id"])
+            return ResultadoPago(status="approved", detalle=MENSAJES["accredited"])
+        if order["status"] in ("action_required", "in_review", "in_process"):
+            return ResultadoPago(status="in_process", detalle=MENSAJES.get(detalle, "Tu pago se está procesando."))
 
-        mensaje = MENSAJES.get(detalle, "El pago fue rechazado. Intenta con otra tarjeta.")
-        return ResultadoPago(status=status, detalle=mensaje)
+        print("Pago rechazado:", codigo, order.get("status"), detalle)
+        return ResultadoPago(status="rejected", detalle=MENSAJES.get(detalle, "El pago fue rechazado. Intenta con otra tarjeta."))
 
 
-async def procesar_pago(pago_id):
-    resultado = await asyncio.to_thread(sdk.payment().get, pago_id)
-    if resultado["status"] != 200:
+async def procesar_order(order_id):
+    codigo, order = await asyncio.to_thread(_obtener_order, order_id)
+    if codigo != 200:
         return
-    pago = resultado["response"]
-    pedido_id = pago.get("external_reference")
-    if pedido_id and pago.get("status") == "approved":
-        await marcar_pagado(pedido_id)
+    if order.get("status") == "processed" and order.get("external_reference"):
+        await marcar_pagado(order["external_reference"])

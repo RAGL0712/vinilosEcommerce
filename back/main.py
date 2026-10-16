@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
-from resolvers.pago import procesar_pago
+from resolvers.pago import procesar_order
 
 from schema import schema
 from jwt_service import decodificar
@@ -35,12 +35,12 @@ async def webhook_mercadopago(request: Request):
     except Exception:
         body = {}
 
-    tipo = body.get("type") or params.get("type") or params.get("topic")
-    pago_id = (body.get("data") or {}).get("id") or params.get("data.id") or params.get("id")
+    tipo = body.get("type") or params.get("type")
+    order_id = (body.get("data") or {}).get("id") or params.get("data.id")
 
-    if tipo == "payment" and pago_id:
+    if tipo == "order" and order_id:
         try:
-            await procesar_pago(pago_id)
+            await procesar_order(order_id)
         except Exception as e:
             print("Error en webhook:", e)
 

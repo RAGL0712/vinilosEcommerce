@@ -34,13 +34,13 @@ export default function Checkout() {
   }
 
   // Paso 2: el Brick entrega el token de la tarjeta y lo mandamos al back
-  const pagar = async (formData) => {
+  const pagar = async (formData, additionalData) => {
     try {
       const d = await gqlAuth(`mutation { pagarPedido(datos: {
         pedidoId: "${pedido.id}",
         token: ${JSON.stringify(formData.token)},
         paymentMethodId: ${JSON.stringify(formData.payment_method_id)},
-        issuerId: ${JSON.stringify(String(formData.issuer_id ?? ''))},
+        paymentTypeId: ${JSON.stringify(additionalData?.paymentTypeId || 'credit_card')},
         installments: ${Number(formData.installments) || 1},
         email: ${JSON.stringify(formData.payer?.email ?? form.email)}
       }) { status detalle } }`)
