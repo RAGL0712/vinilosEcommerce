@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from db import consultar, ejecutar
 from auth import requerir_usuario
+from resolvers.producto import normalizar_imagen
 
 
 #TYPES
@@ -53,7 +54,7 @@ class CarritoQueries:
                 titulo=f["titulo"],
                 artista=f["artista"],
                 precio=float(f["precio"]),
-                imagen_url=f["imagen_url"],
+                imagen_url=normalizar_imagen(f["imagen_url"]),
                 cantidad=f["cantidad"],
             )
             for f in filas

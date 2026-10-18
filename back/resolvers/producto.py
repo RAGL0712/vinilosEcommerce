@@ -5,6 +5,21 @@ from db import consultar, ejecutar
 from auth import requerir_admin
 
 
+IMAGEN_DEFECTO = "https://t3.ftcdn.net/jpg/03/64/22/10/360_F_364221046_KJcZa8Yvt4WWFAuxfcCTTW7I2M9iTwLe.jpg"
+
+
+# Devuelve una url usable: si esta vacia o no es valida, se usa la imagen por defecto
+def normalizar_imagen(url):
+    url = (url or "").strip()
+    if len(url) > 255:
+        return IMAGEN_DEFECTO
+    if url.startswith("/imagenes/") and url[len("/imagenes/"):].isdigit():
+        return url
+    if url.startswith(("http://", "https://")) and " " not in url and "." in url:
+        return url
+    return IMAGEN_DEFECTO
+
+
 #TYPES
 
 
@@ -32,7 +47,7 @@ def crear_producto(f):
         titulo=f["titulo"],
         artista=f["artista"],
         precio=float(f["precio"]),
-        imagen_url=f["imagen_url"],
+        imagen_url=normalizar_imagen(f["imagen_url"]),
         stock=f["stock"],
         categoria_id=f["categoria_id"],
     )
@@ -78,7 +93,7 @@ class ProductoMutations:
                 "titulo": datos.titulo,
                 "artista": datos.artista,
                 "precio": datos.precio,
-                "imagen_url": datos.imagen_url,
+                "imagen_url": normalizar_imagen(datos.imagen_url),
                 "stock": datos.stock,
                 "categoria_id": int(datos.categoriaId),
             },
@@ -100,7 +115,7 @@ class ProductoMutations:
                 "titulo": datos.titulo or actual["titulo"],
                 "artista": datos.artista or actual["artista"],
                 "precio": datos.precio or actual["precio"],
-                "imagen_url": datos.imagen_url or actual["imagen_url"],
+                "imagen_url": normalizar_imagen(datos.imagen_url) if datos.imagen_url else normalizar_imagen(actual["imagen_url"]),
                 "stock": datos.stock if datos.stock is not None else actual["stock"],
                 "categoria_id": int(datos.categoriaId) if datos.categoriaId else actual["categoria_id"],
                 "id": int(id),

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { gqlAuth, obtenerCarrito } from '../lib/api.js'
+import Img from '../components/Img.jsx'
 
 export default function Carrito() {
   const [cart, setCart] = useState(null)
@@ -36,7 +37,7 @@ export default function Carrito() {
       <div className="cartList">
         {cart.map((i) => (
           <div key={i.id} className="cartItem">
-            <img src={i.cover} alt={i.title} className="cartItemImg" />
+            <Img src={i.cover} alt={i.title} className="cartItemImg" />
             <div className="cartItemDetails">
               <h3>{i.title}</h3>
               <p>{i.artist}</p>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getSesion, gql, gqlAuth, suscribir } from '../lib/api.js'
+import { getSesion, gql, gqlAuth, suscribir, IMAGEN_DEFECTO, urlImagen, imagenCarga, comprimirImagen, subirImagen } from '../lib/api.js'
+import Img from '../components/Img.jsx'
 
 const j = JSON.stringify
 const ESTADOS = ['PENDIENTE', 'PAGADO', 'ENVIADO', 'CANCELADO']
@@ -129,25 +130,57 @@ function Productos() {
   const [sel, setSel, p] = useSeleccion(lista)
   const [categorias, setCategorias] = useState([])
   const [f, setF] = useState(VACIO_P)
+  const [archivo, setArchivo] = useState(null) // { blob, preview }: imagen elegida desde el dispositivo
   const cambiar = (e) => setF({ ...f, [e.target.name]: e.target.value })
+
+  const limpiarArchivo = () => {
+    if (archivo) URL.revokeObjectURL(archivo.preview)
+    setArchivo(null)
+  }
+  const elegirArchivo = async (e) => {
+    const file = e.target.files[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      const blob = await comprimirImagen(file)
+      limpiarArchivo()
+      setArchivo({ blob, preview: URL.createObjectURL(blob) })
+    } catch (err) {
+      alert(err.message + '. Se usara la imagen por defecto si no eliges otra.')
+      limpiarArchivo()
+    }
+  }
 
   useEffect(() => {
     gql('query { obtenerCategorias { id nombre } }').then((d) => setCategorias(d.obtenerCategorias))
   }, [])
 
-  const nuevo = () => { setF(VACIO_P); setSel({ nuevo: true }) }
+  const nuevo = () => { limpiarArchivo(); setF(VACIO_P); setSel({ nuevo: true }) }
   const editar = () => {
+    limpiarArchivo()
     setF({ id: p.id, titulo: p.titulo, artista: p.artista, precio: p.precio, stock: p.stock, imagen_url: p.imagen_url || '', categoriaId: p.categoria.id })
     setSel({ id: p.id, editar: true })
   }
 
   const guardar = async (e) => {
     e.preventDefault()
-    const campos = `titulo: ${j(f.titulo)}, artista: ${j(f.artista)}, precio: ${Number(f.precio)}, stock: ${parseInt(f.stock)}, categoriaId: ${j(f.categoriaId)}, imagen_url: ${j(f.imagen_url)}`
+    let imagen = f.imagen_url.trim()
+    try {
+      if (archivo) {
+        imagen = await subirImagen(archivo.blob) // imagen del dispositivo
+      } else if (imagen && !(await imagenCarga(urlImagen(imagen)))) {
+        alert('La URL de la imagen no es valida o no carga. Se usara la imagen por defecto.')
+        imagen = IMAGEN_DEFECTO
+      }
+    } catch (err) {
+      alert(err.message)
+      return
+    }
+    const campos = `titulo: ${j(f.titulo)}, artista: ${j(f.artista)}, precio: ${Number(f.precio)}, stock: ${parseInt(f.stock)}, categoriaId: ${j(f.categoriaId)}, imagen_url: ${j(imagen)}`
     const m = f.id
       ? `mutation { actualizarProducto(id: ${j(f.id)}, datos: {${campos}}) { id } }`
       : `mutation { crearProducto(datos: {${campos}}) { id } }`
-    if (await accion(() => gqlAuth(m))) setSel(f.id ? { id: f.id, editar: false } : null)
+    if (await accion(() => gqlAuth(m))) { limpiarArchivo(); setSel(f.id ? { id: f.id, editar: false } : null) }
   }
   const eliminar = async () => {
     if (!confirm(`Eliminar "${p.titulo}"?`)) return
@@ -185,7 +218,12 @@ function Productos() {
               <label>Artista<input className="inputCO" name="artista" maxLength={150} value={f.artista} onChange={cambiar} required /></label>
               <label>Precio<input className="inputCO" name="precio" type="number" step="0.01" min="0.01" max="99999999.99" value={f.precio} onChange={cambiar} required /></label>
               <label>Stock<input className="inputCO" name="stock" type="number" step="1" min={f.id ? 0 : 1} max="100000" value={f.stock} onChange={cambiar} required /></label>
-              <label>URL imagen<input className="inputCO" name="imagen_url" type="url" maxLength={255} placeholder="https://..." value={f.imagen_url} onChange={cambiar} /></label>
+              <label>Imagen del producto
+                <Img className="adminImagen" src={archivo ? archivo.preview : f.imagen_url} alt="Vista previa" />
+                <input className="inputCO" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={elegirArchivo} />
+              </label>
+              <label>...o URL de imagen<input className="inputCO" name="imagen_url" type="text" maxLength={255} placeholder="https://... (vacio = imagen por defecto)" value={f.imagen_url} onChange={cambiar} disabled={!!archivo} /></label>
+              {archivo && <button type="button" className="backBtn adminBtn" onClick={limpiarArchivo}>Quitar imagen elegida</button>}
               <label>Categoria
                 <select className="inputCO" name="categoriaId" value={f.categoriaId} onChange={cambiar} required>
                   <option value="">Selecciona...</option>
@@ -199,7 +237,7 @@ function Productos() {
             </form>
           ) : (
             <>
-              {p.imagen_url && <img className="adminImagen" src={p.imagen_url} alt={p.titulo} />}
+              <Img className="adminImagen" src={p.imagen_url} alt={p.titulo} />
               <p>Artista: {p.artista}</p>
               <p>Categoria: {p.categoria.nombre}</p>
               <p>Precio: ${p.precio}</p>

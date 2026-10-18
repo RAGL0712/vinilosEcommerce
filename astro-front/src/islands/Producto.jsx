@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { gql, gqlAuth, obtenerCarrito, marcarCarritoNuevo } from '../lib/api.js'
+import Img from '../components/Img.jsx'
 
 export default function Producto() {
   const [p, setP] = useState(null)
@@ -59,7 +60,7 @@ export default function Producto() {
   return (
     <div className="productDetail">
       <div className="productImageContainer">
-        <img src={p.imagen_url} alt={p.titulo} className="productImage" />
+        <Img src={p.imagen_url} alt={p.titulo} className="productImage" />
       </div>
       <div className="productInfo">
         <span className="productArtist">{p.artista}</span>
