@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { gql, gqlAuth, obtenerCarrito, marcarCarritoNuevo } from '../lib/api.js'
+import { gql, gqlAuth, obtenerCarrito, marcarCarritoNuevo, urlImagen } from '../lib/api.js'
 import Img from '../components/Img.jsx'
+import SpotifyPlayer from '../components/SpotifyPlayer.jsx'
 
 export default function Producto() {
   const [p, setP] = useState(null)
@@ -11,7 +12,7 @@ export default function Producto() {
   useEffect(() => {
     const id = new URLSearchParams(location.search).get('id')
     Promise.all([
-      gql(`query { obtenerProducto(id: "${id}") { id titulo artista precio imagen_url stock } }`),
+      gql(`query { obtenerProducto(id: "${id}") { id titulo artista precio imagen_url stock spotify_uri categoria { nombre } } }`),
       obtenerCarrito().catch((e) => {
         console.error('Carrito:', e)
         return []
@@ -61,6 +62,13 @@ export default function Producto() {
     <div className="productDetail">
       <div className="productImageContainer">
         <Img src={p.imagen_url} alt={p.titulo} className="productImage" />
+        <SpotifyPlayer
+          uri={p.spotify_uri}
+          titulo={p.titulo}
+          artista={p.artista}
+          portada={urlImagen(p.imagen_url)}
+          etiquetas={[p.categoria?.nombre, 'Vinilo'].filter(Boolean)}
+        />
       </div>
       <div className="productInfo">
         <span className="productArtist">{p.artista}</span>

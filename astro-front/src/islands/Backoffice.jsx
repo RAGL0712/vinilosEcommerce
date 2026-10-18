@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { getSesion, gql, gqlAuth, suscribir, IMAGEN_DEFECTO, urlImagen, imagenCarga, comprimirImagen, subirImagen } from '../lib/api.js'
+import { getSesion, gql, gqlAuth, suscribir, IMAGEN_DEFECTO, urlImagen, imagenCarga, comprimirImagen, subirImagen, aSpotifyUri } from '../lib/api.js'
 import Img from '../components/Img.jsx'
+import SpotifyPlayer from '../components/SpotifyPlayer.jsx'
 
 const j = JSON.stringify
 const ESTADOS = ['PENDIENTE', 'PAGADO', 'ENVIADO', 'CANCELADO']
@@ -122,8 +123,8 @@ function Usuarios() {
     </div>
   )
 }
-const Q_PRODUCTOS = `subscription { productosEnVivo { id titulo artista precio stock imagen_url categoria { id nombre } } }`
-const VACIO_P = { id: '', titulo: '', artista: '', precio: '', stock: '', imagen_url: '', categoriaId: '' }
+const Q_PRODUCTOS = `subscription { productosEnVivo { id titulo artista precio stock imagen_url spotify_uri categoria { id nombre } } }`
+const VACIO_P = { id: '', titulo: '', artista: '', precio: '', stock: '', imagen_url: '', spotify: '', categoriaId: '' }
 
 function Productos() {
   const [lista, error] = useEnVivo(Q_PRODUCTOS, 'productosEnVivo')
@@ -158,12 +159,17 @@ function Productos() {
   const nuevo = () => { limpiarArchivo(); setF(VACIO_P); setSel({ nuevo: true }) }
   const editar = () => {
     limpiarArchivo()
-    setF({ id: p.id, titulo: p.titulo, artista: p.artista, precio: p.precio, stock: p.stock, imagen_url: p.imagen_url || '', categoriaId: p.categoria.id })
+    setF({ id: p.id, titulo: p.titulo, artista: p.artista, precio: p.precio, stock: p.stock, imagen_url: p.imagen_url || '', spotify: p.spotify_uri || '', categoriaId: p.categoria.id })
     setSel({ id: p.id, editar: true })
   }
 
   const guardar = async (e) => {
     e.preventDefault()
+    const spotify = aSpotifyUri(f.spotify)
+    if (f.spotify.trim() && !spotify) {
+      alert('El link de Spotify no es valido. Usa el link de un album, cancion o playlist.')
+      return
+    }
     let imagen = f.imagen_url.trim()
     try {
       if (archivo) {
@@ -176,7 +182,7 @@ function Productos() {
       alert(err.message)
       return
     }
-    const campos = `titulo: ${j(f.titulo)}, artista: ${j(f.artista)}, precio: ${Number(f.precio)}, stock: ${parseInt(f.stock)}, categoriaId: ${j(f.categoriaId)}, imagen_url: ${j(imagen)}`
+    const campos = `titulo: ${j(f.titulo)}, artista: ${j(f.artista)}, precio: ${Number(f.precio)}, stock: ${parseInt(f.stock)}, categoriaId: ${j(f.categoriaId)}, imagen_url: ${j(imagen)}, spotify_uri: ${j(spotify || '')}`
     const m = f.id
       ? `mutation { actualizarProducto(id: ${j(f.id)}, datos: {${campos}}) { id } }`
       : `mutation { crearProducto(datos: {${campos}}) { id } }`
@@ -224,6 +230,18 @@ function Productos() {
               </label>
               <label>...o URL de imagen<input className="inputCO" name="imagen_url" type="text" maxLength={255} placeholder="https://... (vacio = imagen por defecto)" value={f.imagen_url} onChange={cambiar} disabled={!!archivo} /></label>
               {archivo && <button type="button" className="backBtn adminBtn" onClick={limpiarArchivo}>Quitar imagen elegida</button>}
+                            <label>Album de Spotify (link, opcional)
+                <input className="inputCO" name="spotify" type="text" maxLength={300} placeholder="https://open.spotify.com/album/..." value={f.spotify} onChange={cambiar} />
+              </label>
+              {f.spotify.trim() && !aSpotifyUri(f.spotify) && <p style={{ color: 'red', margin: 0 }}>El link de Spotify no es valido</p>}
+              {aSpotifyUri(f.spotify) && (
+                <SpotifyPlayer
+                  uri={aSpotifyUri(f.spotify)}
+                  titulo={f.titulo || 'Vista previa'}
+                  artista={f.artista}
+                  portada={archivo ? archivo.preview : urlImagen(f.imagen_url)}
+                />
+              )}
               <label>Categoria
                 <select className="inputCO" name="categoriaId" value={f.categoriaId} onChange={cambiar} required>
                   <option value="">Selecciona...</option>
@@ -242,6 +260,7 @@ function Productos() {
               <p>Categoria: {p.categoria.nombre}</p>
               <p>Precio: ${p.precio}</p>
               <p>Stock: {p.stock}</p>
+              <p>Spotify: {p.spotify_uri || 'Sin album'}</p>
               <div className="adminAcciones">
                 <button className="backBtn adminBtn" onClick={editar}>Editar</button>
                 <button className="backBtn adminBtn eliminarBtn" onClick={eliminar}>Eliminar</button>

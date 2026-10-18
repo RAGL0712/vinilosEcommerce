@@ -967,3 +967,177 @@ button.adminBtn:disabled:hover {
 .ojoBtn:hover {
   color: #000;
 }
+
+/*          REPRODUCTOR SPOTIFY       */
+.player {
+  width: 40vw;
+  margin-top: 1.5rem;
+  background: white;
+  border: 2px solid black;
+  border-radius: 10px;
+  box-shadow: 5px 5px 0px;
+  overflow: hidden;
+}
+.adminPanel .player {
+  width: 100%;
+  margin: 0.5rem 0;
+}
+.player .head {
+  position: relative;
+  overflow: hidden;
+  padding: 15px;
+  color: white;
+  border-bottom: 2px solid black;
+}
+.player .back {
+  position: absolute;
+  inset: -10px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(6px) brightness(0.55);
+}
+.player .front {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.player .avatar {
+  position: relative;
+  flex-shrink: 0;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid black;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+}
+.player .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* agujero central para que parezca un vinilo */
+.player .avatar::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  background: white;
+  border: 3px solid black;
+  border-radius: 50%;
+}
+.player.reproduciendo .avatar {
+  animation: girarDisco 4s linear infinite;
+}
+.player .infos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.player .tituloCancion {
+  font-size: 20px;
+  font-weight: 700;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player .artistaCancion {
+  font-size: 14px;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.75);
+}
+.player .tags span {
+  display: inline-block;
+  margin: 4px 4px 0 0;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  background: black;
+  color: white;
+  border: 1px solid white;
+  border-radius: 3px;
+}
+.player .timeline {
+  padding: 12px 15px 15px;
+}
+.player .controllers {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+.player .controllers button {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  color: black;
+  border: 2px solid black;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+.player .controllers button:hover:not(:disabled) {
+  background: black;
+  color: white;
+}
+.player .controllers .play {
+  width: 56px;
+  height: 56px;
+  background: black;
+  color: white;
+  box-shadow: 3px 3px 0px #888;
+}
+.player.reproduciendo .controllers .play {
+  animation: pulsoPlay 3s infinite both;
+}
+.player .controllers button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.player .soundline {
+  height: 8px;
+  margin-top: 12px;
+  background: #eee;
+  border: 1px solid black;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.player .soundline div {
+  height: 100%;
+  background: black;
+  transition: width 0.4s linear;
+}
+.player .tiempos {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #555;
+}
+.player .embed {
+  border-top: 2px solid black;
+  padding: 8px;
+}
+.player .embed iframe {
+  display: block;
+  border-radius: 8px;
+}
+@keyframes girarDisco {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulsoPlay {
+  0%, 100% { box-shadow: 3px 3px 0px #888; }
+  50% { box-shadow: 0 0 18px 4px rgba(0, 0, 0, 0.35); }
+}
+@media (max-width: 768px) {
+  .player { width: 100%; }
+}

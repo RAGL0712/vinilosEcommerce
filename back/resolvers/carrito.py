@@ -69,20 +69,20 @@ class CarritoMutations:
     async def agregarAlCarrito(self, info: strawberry.Info, productoId: strawberry.ID, cantidad: int = 1) -> str:
         usuarioId = requerir_usuario(info)["usuario_id"]
         carritos = await consultar("SELECT id FROM carritos WHERE usuario_id = :usuario", {"usuario": usuarioId})
-        
+
         if len(carritos) == 0:
-            
             nuevo = await ejecutar("INSERT INTO carritos (usuario_id) VALUES (:usuario) RETURNING id", {"usuario": usuarioId})
             carritoId = nuevo[0]["id"]
         else:
             carritoId = carritos[0]["id"]
 
-            actual = await consultar(
+        actual = await consultar(
             "SELECT cantidad FROM items_carrito WHERE carrito_id = :carrito AND producto_id = :producto",
             {"carrito": carritoId, "producto": int(productoId)},
         )
         yaTiene = actual[0]["cantidad"] if actual else 0
         await validar_stock(productoId, yaTiene + cantidad)
+
         await ejecutar(
             """INSERT INTO items_carrito (carrito_id, producto_id, cantidad)
                VALUES (:carrito, :producto, :cantidad)

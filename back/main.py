@@ -8,6 +8,7 @@ from schema import schema
 from jwt_service import decodificar
 import resolvers.pago as pago
 from imagenes import router as imagenes_router, crear_tabla_imagenes
+from db import ejecutar
 
 
 # request existe en peticiones HTTP y ws en conexiones WebSocket (subscriptions del backoffice)
@@ -29,6 +30,7 @@ async def get_context(request: Request = None, ws: WebSocket = None):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await crear_tabla_imagenes()
+    await ejecutar("ALTER TABLE productos ADD COLUMN IF NOT EXISTS spotify_uri varchar(100)")
     yield
 
 

@@ -176,3 +176,9 @@ export async function subirImagen(blob) {
   if (!res.ok) throw new Error(r.error || 'No se pudo subir la imagen')
   return r.imagen_url
 }
+
+// Convierte un link de Spotify (album, cancion o playlist) a URI "spotify:tipo:id". Devuelve null si no es valido
+export function aSpotifyUri(texto) {
+  const m = String(texto || '').trim().match(/(?:spotify:|open\.spotify\.com\/(?:intl-[a-z-]+\/)?)(album|track|playlist)[:/]([A-Za-z0-9]{22})/)
+  return m ? `spotify:${m[1]}:${m[2]}` : null
+}

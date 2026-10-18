@@ -1,3 +1,4 @@
+import re
 import strawberry
 from typing import Annotated, List, Optional
 
@@ -20,6 +21,20 @@ def normalizar_imagen(url):
     return IMAGEN_DEFECTO
 
 
+# Acepta un link de Spotify (album, cancion o playlist) o un URI y lo guarda como "spotify:tipo:id"
+SPOTIFY_RE = re.compile(r"(?:spotify:|open\.spotify\.com/(?:intl-[a-z-]+/)?)(album|track|playlist)[:/]([A-Za-z0-9]{22})")
+
+
+def normalizar_spotify(valor):
+    valor = (valor or "").strip()
+    if not valor:
+        return None
+    m = SPOTIFY_RE.search(valor)
+    if not m:
+        raise Exception("El link de Spotify no es valido (usa el link de un album, cancion o playlist)")
+    return f"spotify:{m.group(1)}:{m.group(2)}"
+
+
 #TYPES
 
 
@@ -31,6 +46,7 @@ class Producto:
     precio: float
     imagen_url: Optional[str]
     stock: int
+    spotify_uri: Optional[str]
     categoria_id: strawberry.Private[int]
 
     @strawberry.field
@@ -49,6 +65,7 @@ def crear_producto(f):
         precio=float(f["precio"]),
         imagen_url=normalizar_imagen(f["imagen_url"]),
         stock=f["stock"],
+        spotify_uri=f.get("spotify_uri"),
         categoria_id=f["categoria_id"],
     )
 
@@ -86,8 +103,8 @@ class ProductoMutations:
     async def crearProducto(self, info: strawberry.Info, datos: "ProductoInput") -> Optional[Producto]:
         requerir_admin(info)
         filas = await ejecutar(
-            """INSERT INTO productos (titulo, artista, precio, imagen_url, stock, categoria_id)
-               VALUES (:titulo, :artista, :precio, :imagen_url, :stock, :categoria_id)
+            """INSERT INTO productos (titulo, artista, precio, imagen_url, stock, categoria_id, spotify_uri)
+               VALUES (:titulo, :artista, :precio, :imagen_url, :stock, :categoria_id, :spotify_uri)
                RETURNING *""",
             {
                 "titulo": datos.titulo,
@@ -96,6 +113,7 @@ class ProductoMutations:
                 "imagen_url": normalizar_imagen(datos.imagen_url),
                 "stock": datos.stock,
                 "categoria_id": int(datos.categoriaId),
+                "spotify_uri": normalizar_spotify(datos.spotify_uri),
             },
         )
         return crear_producto(filas[0])
@@ -108,7 +126,8 @@ class ProductoMutations:
 
         filas = await ejecutar(
             """UPDATE productos
-               SET titulo = :titulo, artista = :artista, precio = :precio, imagen_url = :imagen_url, stock = :stock, categoria_id = :categoria_id
+               SET titulo = :titulo, artista = :artista, precio = :precio, imagen_url = :imagen_url, stock = :stock,
+                   categoria_id = :categoria_id, spotify_uri = :spotify_uri
                WHERE id = :id
                RETURNING *""",
             {
@@ -118,6 +137,7 @@ class ProductoMutations:
                 "imagen_url": normalizar_imagen(datos.imagen_url) if datos.imagen_url else normalizar_imagen(actual["imagen_url"]),
                 "stock": datos.stock if datos.stock is not None else actual["stock"],
                 "categoria_id": int(datos.categoriaId) if datos.categoriaId else actual["categoria_id"],
+                "spotify_uri": normalizar_spotify(datos.spotify_uri) if datos.spotify_uri is not None else actual.get("spotify_uri"),
                 "id": int(id),
             },
         )
@@ -146,6 +166,7 @@ class ProductoInput:
     stock: int
     categoriaId: strawberry.ID
     imagen_url: Optional[str] = None
+    spotify_uri: Optional[str] = None
 
 @strawberry.input
 class ProductoUpdateInput:
@@ -155,3 +176,4 @@ class ProductoUpdateInput:
     imagen_url: Optional[str] = None
     stock: Optional[int] = None
     categoriaId: Optional[strawberry.ID] = None
+    spotify_uri: Optional[str] = None
