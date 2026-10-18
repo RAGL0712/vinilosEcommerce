@@ -227,6 +227,11 @@ body {
   height: 35px;
 }
 
+.menuIcon {
+  margin-right: 20px;
+  cursor: pointer;
+}
+
 .cartIcon {
   margin-left: auto;
   cursor: pointer;
@@ -934,4 +939,31 @@ button.adminBtn:disabled:hover {
   .adminLayout.panelAbierto {
     grid-template-columns: 1fr;
   }
+}
+
+
+/*visualizar contraseña*/
+.passwordWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.passwordWrap .inputCO {
+  width: 100%;
+  padding-right: 44px;
+  box-sizing: border-box;
+}
+.ojoBtn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #555;
+  display: flex;
+  align-items: center;
+}
+.ojoBtn:hover {
+  color: #000;
 }
