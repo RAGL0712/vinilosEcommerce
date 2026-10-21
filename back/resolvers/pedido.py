@@ -1,4 +1,6 @@
 import strawberry
+
+from resolvers.direccion import validar_direccion
 from enum import Enum
 from typing import Annotated, List, Optional
 from sqlalchemy import text
@@ -86,6 +88,9 @@ class PedidoMutations:
     @strawberry.field
     async def crearPedido(self, info: strawberry.Info, datos: "PedidoInput") -> Optional[Pedido]:
         usuarioId = requerir_usuario(info)["usuario_id"]
+        verificacion = await validar_direccion(datos.direccion, datos.codigoPostal)
+        if not verificacion["valida"]:
+            raise Exception(verificacion["mensaje"])
 
         async with engine.begin() as conn:
             total = 0
@@ -104,7 +109,7 @@ class PedidoMutations:
                     "usuario": usuarioId,
                     "nombre": datos.nombreCliente,
                     "email": datos.email,
-                    "direccion": datos.direccion,
+                    "direccion": verificacion["direccion"],
                     "total": total,
                 },
             )
@@ -142,6 +147,7 @@ class PedidoInput:
     nombreCliente: str
     email: str
     direccion: str
+    codigoPostal: str
     lineas: List[LineaPedidoInput]
 
 
