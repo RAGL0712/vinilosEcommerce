@@ -50,13 +50,7 @@ function Usuarios() {
   const [f, setF] = useState(VACIO_U)
   const cambiar = (e) => setF({ ...f, [e.target.name]: e.target.value })
 
-  const nuevo = () => { limpiarArchivo(); setF(VACIO_P); setModo('buscar'); setSel({ nuevo: true }) }
-  const agregarManual = () => { setF(VACIO_P); setModo('form') }
-  const elegirDiscogs = (d) => {
-    limpiarArchivo()
-    setF({ ...VACIO_P, titulo: d.titulo, artista: d.artista, imagen_url: d.imagen || '', categoriaId: d.categoriaId || '' })
-    setModo('form')
-  }
+  const nuevo = () => { setF(VACIO_U); setSel({ nuevo: true }) }
   const editar = () => { setF({ ...u, password: '' }); setSel({ id: u.id, editar: true }) }
 
   const guardar = async (e) => {
@@ -96,12 +90,9 @@ function Usuarios() {
       </section>
 
       {sel && (enForm || u) && (
-        <Panel titulo={sel.nuevo && modo === 'buscar' ? 'Buscar en Discogs' : sel.nuevo ? 'Nuevo producto' : enForm ? 'Editar producto' : p.titulo} onCerrar={() => setSel(null)}>
-          {sel.nuevo && modo === 'buscar' ? (
-            <BuscadorDiscogs onElegir={elegirDiscogs} onManual={agregarManual} />
-          ) : enForm ? (
+        <Panel titulo={sel.nuevo ? 'Nuevo usuario' : enForm ? 'Editar usuario' : u.nombre} onCerrar={() => setSel(null)}>
+          {enForm ? (
             <form className="adminForm" onSubmit={guardar}>
-            {sel.nuevo && <button type="button" className="backBtn adminBtn" onClick={() => setModo('buscar')}>← Volver a buscar en Discogs</button>}
               <label>Nombre<input className="inputCO" name="nombre" minLength={2} maxLength={100} value={f.nombre} onChange={cambiar} required /></label>
               <label>Email<input className="inputCO" name="email" type="email" maxLength={150} value={f.email} onChange={cambiar} required /></label>
               <label>Contraseña{f.id && ' (vacío = no cambiar)'}
@@ -137,13 +128,12 @@ const Q_PRODUCTOS = `subscription { productosEnVivo { id titulo artista precio s
 const VACIO_P = { id: '', titulo: '', artista: '', precio: '', stock: '', imagen_url: '', spotify: '', categoriaId: '' }
 
 function Productos() {
-
   const [lista, error] = useEnVivo(Q_PRODUCTOS, 'productosEnVivo')
   const [sel, setSel, p] = useSeleccion(lista)
   const [categorias, setCategorias] = useState([])
   const [f, setF] = useState(VACIO_P)
   const [archivo, setArchivo] = useState(null) // { blob, preview }: imagen elegida desde el dispositivo
-  const [modo, setModo] = useState('form')
+  const [modo, setModo] = useState('form') // 'buscar' = buscador de Discogs, 'form' = tarjeta
   const cambiar = (e) => setF({ ...f, [e.target.name]: e.target.value })
 
   const limpiarArchivo = () => {
@@ -168,7 +158,13 @@ function Productos() {
     gql('query { obtenerCategorias { id nombre } }').then((d) => setCategorias(d.obtenerCategorias))
   }, [])
 
-  const nuevo = () => { limpiarArchivo(); setF(VACIO_P); setSel({ nuevo: true }) }
+  const nuevo = () => { limpiarArchivo(); setF(VACIO_P); setModo('buscar'); setSel({ nuevo: true }) }
+  const agregarManual = () => { setF(VACIO_P); setModo('form') }
+  const elegirDiscogs = (d) => {
+    limpiarArchivo()
+    setF({ ...VACIO_P, titulo: d.titulo, artista: d.artista, imagen_url: d.imagen || '', categoriaId: d.categoriaId || '' })
+    setModo('form')
+  }
   const editar = () => {
     limpiarArchivo()
     setF({ id: p.id, titulo: p.titulo, artista: p.artista, precio: p.precio, stock: p.stock, imagen_url: p.imagen_url || '', spotify: p.spotify_uri || '', categoriaId: p.categoria.id })
@@ -195,6 +191,9 @@ function Productos() {
           imagen = IMAGEN_DEFECTO
         }
       } else if (imagen && !(await imagenCarga(urlImagen(imagen)))) {
+        alert('La URL de la imagen no es valida o no carga. Se usara la imagen por defecto.')
+        imagen = IMAGEN_DEFECTO
+      }
     } catch (err) {
       alert(err.message)
       return
@@ -234,9 +233,12 @@ function Productos() {
       </section>
 
       {sel && (enForm || p) && (
-        <Panel titulo={sel.nuevo ? 'Nuevo producto' : enForm ? 'Editar producto' : p.titulo} onCerrar={() => setSel(null)}>
-          {enForm ? (
+        <Panel titulo={sel.nuevo && modo === 'buscar' ? 'Buscar en Discogs' : sel.nuevo ? 'Nuevo producto' : enForm ? 'Editar producto' : p.titulo} onCerrar={() => setSel(null)}>
+          {sel.nuevo && modo === 'buscar' ? (
+            <BuscadorDiscogs onElegir={elegirDiscogs} onManual={agregarManual} />
+          ) : enForm ? (
             <form className="adminForm" onSubmit={guardar}>
+              {sel.nuevo && <button type="button" className="backBtn adminBtn" onClick={() => setModo('buscar')}>← Volver a buscar en Discogs</button>}
               <label>Titulo<input className="inputCO" name="titulo" maxLength={150} value={f.titulo} onChange={cambiar} required /></label>
               <label>Artista<input className="inputCO" name="artista" maxLength={150} value={f.artista} onChange={cambiar} required /></label>
               <label>Precio<input className="inputCO" name="precio" type="number" step="0.01" min="0.01" max="99999999.99" value={f.precio} onChange={cambiar} required /></label>
@@ -247,7 +249,7 @@ function Productos() {
               </label>
               <label>...o URL de imagen<input className="inputCO" name="imagen_url" type="text" maxLength={255} placeholder="https://... (vacio = imagen por defecto)" value={f.imagen_url} onChange={cambiar} disabled={!!archivo} /></label>
               {archivo && <button type="button" className="backBtn adminBtn" onClick={limpiarArchivo}>Quitar imagen elegida</button>}
-                            <label>Album de Spotify (link, opcional)
+              <label>Album de Spotify (link, opcional)
                 <input className="inputCO" name="spotify" type="text" maxLength={300} placeholder="https://open.spotify.com/album/..." value={f.spotify} onChange={cambiar} />
               </label>
               {f.spotify.trim() && !aSpotifyUri(f.spotify) && <p style={{ color: 'red', margin: 0 }}>El link de Spotify no es valido</p>}
