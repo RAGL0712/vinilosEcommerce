@@ -30,6 +30,15 @@ def _geocodificar(direccion, cp):
     return r.json()
 
 
+def _geocodificar_cp(cp):
+    r = requests.get(
+        GEOCODE_URL,
+        params={"components": f"country:MX|postal_code:{cp}", "language": "es", "region": "mx", "key": GOOGLE_MAPS_API_KEY},
+        timeout=15,
+    )
+    return r.json()
+
+
 def _componente(resultado, tipo):
     for c in resultado.get("address_components", []):
         if tipo in c.get("types", []):
@@ -78,14 +87,6 @@ async def validar_direccion(direccion, codigo_postal):
         "lng": ubicacion["lng"],
     }
 
-def _geocodificar_cp(cp):
-    r = requests.get(
-        GEOCODE_URL,
-        params={"components": f"country:MX|postal_code:{cp}", "language": "es", "region": "mx", "key": GOOGLE_MAPS_API_KEY},
-        timeout=15,
-    )
-    return r.json()
-
 
 @strawberry.type
 class UbicacionCP:
@@ -125,6 +126,7 @@ async def buscar_codigo_postal(codigo_postal):
         colonias=sorted(set(colonias)),
     )
 
+
 @strawberry.type
 class DireccionVerificada:
     valida: bool
@@ -140,8 +142,8 @@ class DireccionQueries:
     async def validarDireccion(self, info: strawberry.Info, direccion: str, codigoPostal: str) -> DireccionVerificada:
         requerir_usuario(info)
         return DireccionVerificada(**(await validar_direccion(direccion, codigoPostal)))
+
     @strawberry.field
     async def buscarCodigoPostal(self, info: strawberry.Info, codigoPostal: str) -> UbicacionCP:
         requerir_usuario(info)
         return await buscar_codigo_postal(codigoPostal)
-

@@ -1,6 +1,7 @@
 import strawberry
 from strawberry.schema.config import StrawberryConfig
 
+from resolvers.direccion import DireccionQueries
 from resolvers.categoria import CategoriaQueries
 from resolvers.producto import ProductoQueries, ProductoMutations
 from resolvers.carrito import CarritoQueries, CarritoMutations
@@ -23,6 +24,10 @@ class Mutation(UsuarioMutations, ProductoMutations, CarritoMutations, PedidoMuta
 
 @strawberry.type
 class Subscription(AdminSubscriptions):
+    pass
+
+@strawberry.type
+class Query(CategoriaQueries, ProductoQueries, CarritoQueries, PedidoQueries, EstadisticasQueries, DireccionQueries):
     pass
 
 
