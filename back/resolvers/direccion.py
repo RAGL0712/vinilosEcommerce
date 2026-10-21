@@ -1,7 +1,7 @@
 import os
 import re
 import asyncio
-from typing import Optional
+from typing import List, Optional
 
 import requests
 import strawberry
@@ -11,7 +11,7 @@ from auth import requerir_usuario
 
 load_dotenv()
 
-GOOGLE_MAPS_API_KEY = os.getenv("AIzaSyCKlOG0MYcWsO1UIgXSSoKWqd6Xvd9_8OI")
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json"
 
 
@@ -78,6 +78,52 @@ async def validar_direccion(direccion, codigo_postal):
         "lng": ubicacion["lng"],
     }
 
+def _geocodificar_cp(cp):
+    r = requests.get(
+        GEOCODE_URL,
+        params={"components": f"country:MX|postal_code:{cp}", "language": "es", "region": "mx", "key": GOOGLE_MAPS_API_KEY},
+        timeout=15,
+    )
+    return r.json()
+
+
+@strawberry.type
+class UbicacionCP:
+    encontrado: bool
+    mensaje: str
+    pais: Optional[str] = None
+    estado: Optional[str] = None
+    ciudad: Optional[str] = None
+    colonias: List[str] = strawberry.field(default_factory=list)
+
+
+# Con el codigo postal obtiene pais, estado, ciudad y (si Google las tiene) colonias
+async def buscar_codigo_postal(codigo_postal):
+    cp = (codigo_postal or "").strip()
+    if not re.fullmatch(r"\d{5}", cp):
+        return UbicacionCP(encontrado=False, mensaje="El codigo postal debe tener 5 digitos")
+    if not GOOGLE_MAPS_API_KEY:
+        return UbicacionCP(encontrado=False, mensaje="Falta configurar GOOGLE_MAPS_API_KEY en el servidor")
+
+    datos = await asyncio.to_thread(_geocodificar_cp, cp)
+    resultados = datos.get("results") or []
+    if datos.get("status") not in ("OK", "ZERO_RESULTS"):
+        print("Error Google Geocoding:", datos.get("status"), datos.get("error_message"))
+    if datos.get("status") != "OK" or not resultados or _componente(resultados[0], "postal_code") != cp:
+        return UbicacionCP(encontrado=False, mensaje=f"No encontramos el codigo postal {cp}")
+
+    r = resultados[0]
+    colonias = r.get("postcode_localities") or [
+        x for x in (_componente(r, "sublocality"), _componente(r, "neighborhood")) if x
+    ]
+    return UbicacionCP(
+        encontrado=True,
+        mensaje="Codigo postal encontrado",
+        pais=_componente(r, "country"),
+        estado=_componente(r, "administrative_area_level_1"),
+        ciudad=_componente(r, "locality") or _componente(r, "administrative_area_level_2"),
+        colonias=sorted(set(colonias)),
+    )
 
 @strawberry.type
 class DireccionVerificada:
@@ -94,3 +140,8 @@ class DireccionQueries:
     async def validarDireccion(self, info: strawberry.Info, direccion: str, codigoPostal: str) -> DireccionVerificada:
         requerir_usuario(info)
         return DireccionVerificada(**(await validar_direccion(direccion, codigoPostal)))
+    @strawberry.field
+    async def buscarCodigoPostal(self, info: strawberry.Info, codigoPostal: str) -> UbicacionCP:
+        requerir_usuario(info)
+        return await buscar_codigo_postal(codigoPostal)
+
