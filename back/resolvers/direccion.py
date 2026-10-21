@@ -1,6 +1,8 @@
 import os
 import re
+import time
 import asyncio
+import unicodedata
 from typing import List, Optional
 
 import requests
@@ -11,81 +13,64 @@ from auth import requerir_usuario
 
 load_dotenv()
 
-GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
-GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json"
+ZIPPOPOTAM_URL = "https://api.zippopotam.us/mx/{cp}"
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+# Nominatim pide identificar la app con un User-Agent y un correo de contacto
+NOMINATIM_EMAIL = os.getenv("NOMINATIM_EMAIL", "")
+HEADERS = {"User-Agent": f"VinilosEcommerce/1.0 ({NOMINATIM_EMAIL or 'proyecto escolar'})", "Accept-Language": "es"}
+
+_cache_cp = {}
+_lock_nominatim = asyncio.Lock()
+_ultima_peticion = 0.0
 
 
-def _geocodificar(direccion, cp):
-    r = requests.get(
-        GEOCODE_URL,
-        params={
-            "address": direccion,
-            "components": f"country:MX|postal_code:{cp}",
-            "language": "es",
-            "region": "mx",
-            "key": GOOGLE_MAPS_API_KEY,
-        },
-        timeout=15,
-    )
-    return r.json()
+def _get_json(url, params=None):
+    try:
+        r = requests.get(url, params=params, headers=HEADERS, timeout=15)
+        if r.status_code != 200:
+            if r.status_code != 404:
+                print("Error servicio de direcciones:", url, r.status_code, r.text[:200])
+            return None
+        return r.json()
+    except Exception as e:
+        print("Error servicio de direcciones:", url, e)
+        return None
 
 
-def _geocodificar_cp(cp):
-    r = requests.get(
-        GEOCODE_URL,
-        params={"components": f"country:MX|postal_code:{cp}", "language": "es", "region": "mx", "key": GOOGLE_MAPS_API_KEY},
-        timeout=15,
-    )
-    return r.json()
+# Nominatim permite maximo 1 peticion por segundo
+async def _nominatim(params):
+    global _ultima_peticion
+    async with _lock_nominatim:
+        espera = 1.1 - (time.monotonic() - _ultima_peticion)
+        if espera > 0:
+            await asyncio.sleep(espera)
+        try:
+            return await asyncio.to_thread(
+                _get_json, NOMINATIM_URL, {**params, "format": "jsonv2", "addressdetails": 1, "limit": 1, "countrycodes": "mx"}
+            )
+        finally:
+            _ultima_peticion = time.monotonic()
 
 
-def _componente(resultado, tipo):
-    for c in resultado.get("address_components", []):
-        if tipo in c.get("types", []):
-            return c.get("long_name")
+def _normalizar(texto):
+    t = unicodedata.normalize("NFD", (texto or "").lower())
+    t = "".join(c for c in t if unicodedata.category(c) != "Mn").strip()
+    t = t.replace("estado de ", "")
+    if t in ("distrito federal", "cdmx", "d.f."):
+        t = "ciudad de mexico"
+    return t
+
+
+def _mismo_estado(a, b):
+    a, b = _normalizar(a), _normalizar(b)
+    return bool(a and b) and (a.startswith(b) or b.startswith(a))
+
+
+def _ciudad_de(direccion):
+    for clave in ("city", "town", "municipality", "village", "county"):
+        if direccion.get(clave):
+            return direccion[clave]
     return None
-
-
-def _invalida(mensaje):
-    return {"valida": False, "mensaje": mensaje, "direccion": None, "lat": None, "lng": None}
-
-
-# Verifica con Google Geocoding que la direccion exista y pertenezca al codigo postal
-async def validar_direccion(direccion, codigo_postal):
-    direccion = (direccion or "").strip()
-    cp = (codigo_postal or "").strip()
-
-    if not re.fullmatch(r"\d{5}", cp):
-        return _invalida("El codigo postal debe tener 5 digitos")
-    if len(direccion) < 5:
-        return _invalida("Escribe la calle y el numero")
-    if not GOOGLE_MAPS_API_KEY:
-        return _invalida("Falta configurar GOOGLE_MAPS_API_KEY en el servidor")
-
-    datos = await asyncio.to_thread(_geocodificar, direccion, cp)
-    estado = datos.get("status")
-    resultados = datos.get("results") or []
-
-    if estado == "ZERO_RESULTS" or (estado == "OK" and not resultados):
-        return _invalida("No encontramos esa direccion. Revisa la calle, el numero y el codigo postal")
-    if estado != "OK":
-        print("Error Google Geocoding:", estado, datos.get("error_message"))
-        return _invalida(f"No se pudo verificar la direccion ({estado})")
-
-    r = resultados[0]
-    if _componente(r, "postal_code") != cp:
-        return _invalida(f"La direccion no corresponde al codigo postal {cp}")
-    if not _componente(r, "route"):
-        return _invalida(f"No encontramos esa calle en el codigo postal {cp}. Escribe calle y numero")
-
-    ubicacion = r["geometry"]["location"]
-    return {
-        "valida": True,
-        "mensaje": "Direccion verificada",
-        "direccion": r["formatted_address"],
-        "lat": ubicacion["lat"],
-        "lng": ubicacion["lng"],
-    }
 
 
 @strawberry.type
@@ -98,33 +83,98 @@ class UbicacionCP:
     colonias: List[str] = strawberry.field(default_factory=list)
 
 
-# Con el codigo postal obtiene pais, estado, ciudad y (si Google las tiene) colonias
+# Con el codigo postal obtiene pais, estado y colonias (Zippopotam) y la ciudad (OpenStreetMap)
 async def buscar_codigo_postal(codigo_postal):
     cp = (codigo_postal or "").strip()
     if not re.fullmatch(r"\d{5}", cp):
         return UbicacionCP(encontrado=False, mensaje="El codigo postal debe tener 5 digitos")
-    if not GOOGLE_MAPS_API_KEY:
-        return UbicacionCP(encontrado=False, mensaje="Falta configurar GOOGLE_MAPS_API_KEY en el servidor")
+    if cp in _cache_cp:
+        return _cache_cp[cp]
 
-    datos = await asyncio.to_thread(_geocodificar_cp, cp)
-    resultados = datos.get("results") or []
-    if datos.get("status") not in ("OK", "ZERO_RESULTS"):
-        print("Error Google Geocoding:", datos.get("status"), datos.get("error_message"))
-    if datos.get("status") != "OK" or not resultados or _componente(resultados[0], "postal_code") != cp:
+    datos = await asyncio.to_thread(_get_json, ZIPPOPOTAM_URL.format(cp=cp))
+    lugares = (datos or {}).get("places") or []
+    if not lugares:
         return UbicacionCP(encontrado=False, mensaje=f"No encontramos el codigo postal {cp}")
 
-    r = resultados[0]
-    colonias = r.get("postcode_localities") or [
-        x for x in (_componente(r, "sublocality"), _componente(r, "neighborhood")) if x
-    ]
-    return UbicacionCP(
+    estado = lugares[0].get("state") or ""
+    if _normalizar(estado) == "ciudad de mexico":
+        estado = "Ciudad de México"
+    colonias = sorted({l.get("place name") for l in lugares if l.get("place name")})
+
+    ciudad = None
+    r = await _nominatim({"postalcode": cp, "country": "México"})
+    if r and _mismo_estado(r[0].get("address", {}).get("state"), estado):
+        ciudad = _ciudad_de(r[0]["address"])
+    if not ciudad and colonias:
+        r = await _nominatim({"q": f"{colonias[0]}, {estado}, México"})
+        if r and _mismo_estado(r[0].get("address", {}).get("state"), estado):
+            ciudad = _ciudad_de(r[0]["address"])
+
+    resultado = UbicacionCP(
         encontrado=True,
         mensaje="Codigo postal encontrado",
-        pais=_componente(r, "country"),
-        estado=_componente(r, "administrative_area_level_1"),
-        ciudad=_componente(r, "locality") or _componente(r, "administrative_area_level_2"),
-        colonias=sorted(set(colonias)),
+        pais="México",
+        estado=estado,
+        ciudad=ciudad,
+        colonias=colonias,
     )
+    _cache_cp[cp] = resultado
+    return resultado
+
+
+def _invalida(mensaje):
+    return {"valida": False, "mensaje": mensaje, "direccion": None, "lat": None, "lng": None}
+
+
+# Verifica con OpenStreetMap que la calle exista en el estado del codigo postal.
+# "direccion" llega como "calle y numero, colonia, ciudad, estado" (asi la arma el checkout)
+async def validar_direccion(direccion, codigo_postal):
+    direccion = (direccion or "").strip()
+    cp = (codigo_postal or "").strip()
+
+    if not re.fullmatch(r"\d{5}", cp):
+        return _invalida("El codigo postal debe tener 5 digitos")
+    if len(direccion) < 5:
+        return _invalida("Escribe la calle y el numero")
+
+    ubicacion = await buscar_codigo_postal(cp)
+    if not ubicacion.encontrado:
+        return _invalida(ubicacion.mensaje)
+
+    partes = [p.strip() for p in direccion.split(",") if p.strip()]
+    partes = [p for p in partes if not p.upper().startswith("C.P.") and _normalizar(p) != "mexico"]
+    calle = partes[0]
+    colonia = partes[1] if len(partes) > 1 and _normalizar(partes[1]) not in (_normalizar(ubicacion.ciudad), _normalizar(ubicacion.estado)) else ""
+    ciudad = ubicacion.ciudad or (partes[2] if len(partes) > 2 else "")
+
+    if not re.search(r"[A-Za-zÁÉÍÓÚáéíóúÑñ]{3,}", calle):
+        return _invalida("Escribe el nombre de la calle y el numero")
+
+    # 1) busqueda estructurada; 2) busqueda libre con la colonia
+    r = await _nominatim({"street": calle, "city": ciudad, "state": ubicacion.estado, "country": "México"})
+    if not r and colonia:
+        r = await _nominatim({"q": f"{calle}, {colonia}, {ciudad}, {ubicacion.estado}, México"})
+    if not r:
+        return _invalida("No encontramos esa calle. Revisa el nombre de la calle, la colonia y el codigo postal")
+
+    resultado = r[0]
+    datos = resultado.get("address", {})
+    if not datos.get("road"):
+        return _invalida("No encontramos esa calle. Escribe el nombre completo de la calle y el numero")
+    if not _mismo_estado(datos.get("state"), ubicacion.estado):
+        return _invalida(f"Esa calle no esta en {ubicacion.estado}, que es el estado del codigo postal {cp}")
+    if datos.get("postcode") and datos["postcode"].strip() != cp:
+        return _invalida(f"Esa calle no corresponde al codigo postal {cp}")
+
+    ciudad_final = ubicacion.ciudad or _ciudad_de(datos) or ciudad
+    texto = ", ".join(x for x in [calle, colonia, f"C.P. {cp}", ciudad_final, ubicacion.estado, "México"] if x)
+    return {
+        "valida": True,
+        "mensaje": "Direccion verificada",
+        "direccion": texto,
+        "lat": float(resultado["lat"]),
+        "lng": float(resultado["lon"]),
+    }
 
 
 @strawberry.type

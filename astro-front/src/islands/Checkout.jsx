@@ -16,6 +16,7 @@ export default function Checkout() {
   const [verificada, setVerificada] = useState(null)   // { direccion, lat, lng } cuando Google la valida
   const [verificando, setVerificando] = useState(false)
   const [errorDireccion, setErrorDireccion] = useState('')
+  const [ciudadFija, setCiudadFija] = useState(false)
 
   useEffect(() => {
     obtenerCarrito().then(setCart).catch((e) => setError(e.message))
@@ -29,6 +30,7 @@ export default function Checkout() {
       if (u.encontrado) {
         setForm((f) => ({ ...f, pais: u.pais || '', estado: u.estado || '', ciudad: u.ciudad || '', colonia: u.colonias.length === 1 ? u.colonias[0] : f.colonia }))
         setColonias(u.colonias)
+        setCiudadFija(!!u.ciudad)
       } else {
         setErrorDireccion(u.mensaje)
       }
@@ -45,11 +47,12 @@ export default function Checkout() {
       value = value.replace(/\D/g, '').slice(0, 5)
       setForm((f) => ({ ...f, cp: value, pais: '', estado: '', ciudad: '' }))
       setColonias([])
+      setCiudadFija(false)
       if (value.length === 5) buscarCP(value)
     } else {
       setForm((f) => ({ ...f, [name]: value }))
     }
-    if (['calle', 'colonia', 'cp'].includes(name)) {
+      if (['calle', 'colonia', 'ciudad', 'cp'].includes(name)) {
       setVerificada(null)
       setErrorDireccion('')
     }
@@ -184,7 +187,16 @@ export default function Checkout() {
           </div>
           <div>
             <label>Ciudad / Municipio</label>
-            <input type="text" className="inputCO campoAuto" value={form.ciudad} placeholder="Se llena con el C.P." readOnly tabIndex={-1} />
+              <input
+              type="text"
+              name="ciudad"
+              className={`inputCO ${ciudadFija ? 'campoAuto' : ''}`}
+              value={form.ciudad}
+              onChange={cambiar}
+              readOnly={ciudadFija}
+              tabIndex={ciudadFija ? -1 : 0}
+              placeholder={form.estado && !ciudadFija ? 'Escribe tu ciudad o municipio' : 'Se llena con el C.P.'}
+            />
           </div>
         </div>
 
