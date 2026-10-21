@@ -1,6 +1,7 @@
 import strawberry
 from strawberry.schema.config import StrawberryConfig
 
+from resolvers.discogs import DiscogsQueries, DiscogsMutations
 from resolvers.direccion import DireccionQueries
 from resolvers.categoria import CategoriaQueries
 from resolvers.producto import ProductoQueries, ProductoMutations
@@ -11,23 +12,18 @@ from resolvers.estadisticas import EstadisticasQueries
 from resolvers.pago import PagoMutations
 from resolvers.admin import AdminMutations, AdminSubscriptions
 
-
 @strawberry.type
-class Query(CategoriaQueries, ProductoQueries, CarritoQueries, PedidoQueries, EstadisticasQueries):
+class Query(CategoriaQueries, ProductoQueries, CarritoQueries, PedidoQueries, EstadisticasQueries, DireccionQueries, DiscogsQueries):
     pass
 
 
 @strawberry.type
-class Mutation(UsuarioMutations, ProductoMutations, CarritoMutations, PedidoMutations, PagoMutations, AdminMutations):
+class Mutation(UsuarioMutations, ProductoMutations, CarritoMutations, PedidoMutations, PagoMutations, AdminMutations, DiscogsMutations):
     pass
 
 
 @strawberry.type
 class Subscription(AdminSubscriptions):
-    pass
-
-@strawberry.type
-class Query(CategoriaQueries, ProductoQueries, CarritoQueries, PedidoQueries, EstadisticasQueries, DireccionQueries):
     pass
 
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getSesion, gql, gqlAuth, suscribir, IMAGEN_DEFECTO, urlImagen, imagenCarga, comprimirImagen, subirImagen, aSpotifyUri } from '../lib/api.js'
 import Img from '../components/Img.jsx'
 import SpotifyPlayer from '../components/SpotifyPlayer.jsx'
+import BuscadorDiscogs from '../components/BuscadorDiscogs.jsx'
 
 const j = JSON.stringify
 const ESTADOS = ['PENDIENTE', 'PAGADO', 'ENVIADO', 'CANCELADO']
@@ -49,7 +50,13 @@ function Usuarios() {
   const [f, setF] = useState(VACIO_U)
   const cambiar = (e) => setF({ ...f, [e.target.name]: e.target.value })
 
-  const nuevo = () => { setF(VACIO_U); setSel({ nuevo: true }) }
+  const nuevo = () => { limpiarArchivo(); setF(VACIO_P); setModo('buscar'); setSel({ nuevo: true }) }
+  const agregarManual = () => { setF(VACIO_P); setModo('form') }
+  const elegirDiscogs = (d) => {
+    limpiarArchivo()
+    setF({ ...VACIO_P, titulo: d.titulo, artista: d.artista, imagen_url: d.imagen || '', categoriaId: d.categoriaId || '' })
+    setModo('form')
+  }
   const editar = () => { setF({ ...u, password: '' }); setSel({ id: u.id, editar: true }) }
 
   const guardar = async (e) => {
@@ -89,9 +96,12 @@ function Usuarios() {
       </section>
 
       {sel && (enForm || u) && (
-        <Panel titulo={sel.nuevo ? 'Nuevo usuario' : enForm ? 'Editar usuario' : u.nombre} onCerrar={() => setSel(null)}>
-          {enForm ? (
+        <Panel titulo={sel.nuevo && modo === 'buscar' ? 'Buscar en Discogs' : sel.nuevo ? 'Nuevo producto' : enForm ? 'Editar producto' : p.titulo} onCerrar={() => setSel(null)}>
+          {sel.nuevo && modo === 'buscar' ? (
+            <BuscadorDiscogs onElegir={elegirDiscogs} onManual={agregarManual} />
+          ) : enForm ? (
             <form className="adminForm" onSubmit={guardar}>
+            {sel.nuevo && <button type="button" className="backBtn adminBtn" onClick={() => setModo('buscar')}>← Volver a buscar en Discogs</button>}
               <label>Nombre<input className="inputCO" name="nombre" minLength={2} maxLength={100} value={f.nombre} onChange={cambiar} required /></label>
               <label>Email<input className="inputCO" name="email" type="email" maxLength={150} value={f.email} onChange={cambiar} required /></label>
               <label>Contraseña{f.id && ' (vacío = no cambiar)'}
@@ -127,11 +137,13 @@ const Q_PRODUCTOS = `subscription { productosEnVivo { id titulo artista precio s
 const VACIO_P = { id: '', titulo: '', artista: '', precio: '', stock: '', imagen_url: '', spotify: '', categoriaId: '' }
 
 function Productos() {
+
   const [lista, error] = useEnVivo(Q_PRODUCTOS, 'productosEnVivo')
   const [sel, setSel, p] = useSeleccion(lista)
   const [categorias, setCategorias] = useState([])
   const [f, setF] = useState(VACIO_P)
   const [archivo, setArchivo] = useState(null) // { blob, preview }: imagen elegida desde el dispositivo
+  const [modo, setModo] = useState('form')
   const cambiar = (e) => setF({ ...f, [e.target.name]: e.target.value })
 
   const limpiarArchivo = () => {
@@ -174,10 +186,15 @@ function Productos() {
     try {
       if (archivo) {
         imagen = await subirImagen(archivo.blob) // imagen del dispositivo
+      } else if (/^https:\/\/i\.discogs\.com\//.test(imagen)) {
+        try {
+          const d = await gqlAuth(`mutation { importarImagenDiscogs(url: ${j(imagen)}) }`)
+          imagen = d.importarImagenDiscogs // copia guardada en nuestra BDD
+        } catch (err) {
+          alert('No se pudo copiar la portada de Discogs (' + err.message + '). Se usara la imagen por defecto.')
+          imagen = IMAGEN_DEFECTO
+        }
       } else if (imagen && !(await imagenCarga(urlImagen(imagen)))) {
-        alert('La URL de la imagen no es valida o no carga. Se usara la imagen por defecto.')
-        imagen = IMAGEN_DEFECTO
-      }
     } catch (err) {
       alert(err.message)
       return

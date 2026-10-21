@@ -1172,3 +1172,19 @@ button.adminBtn:disabled:hover {
 @media (max-width: 600px) {
   .filaDireccion { grid-template-columns: 1fr; }
 }
+
+/* ===== Buscador Discogs (Backoffice) ===== */
+.discogs { display: flex; flex-direction: column; gap: 12px; }
+.discogsBuscar { display: flex; gap: 8px; }
+.discogsBuscar .inputCO { flex: 1; min-width: 0; }
+.discogsAviso { margin: 0; font-size: 14px; opacity: .85; }
+.discogsLista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; }
+.discogsItem { width: 100%; display: flex; gap: 12px; align-items: center; padding: 8px; background: transparent; color: inherit; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; cursor: pointer; text-align: left; font: inherit; }
+.discogsItem:hover { border-color: currentColor; background: rgba(128,128,128,.12); }
+.discogsMini { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.discogsTexto { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.discogsTexto strong, .discogsTexto span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.discogsTexto small { opacity: .7; }
+.discogsManual { align-self: flex-start; }
+.discogsCredito { margin: 0; font-size: 12px; opacity: .6; }
+.discogsCredito a { color: inherit; }
