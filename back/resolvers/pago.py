@@ -4,6 +4,7 @@ import asyncio
 
 import requests
 import strawberry
+from notificaciones import notificar_pedido
 from dotenv import load_dotenv
 
 from db import consultar, ejecutar
@@ -77,7 +78,7 @@ async def marcar_pagado(pedido_id):
                  SELECT c.id FROM carritos c JOIN pedidos p ON p.usuario_id = c.usuario_id WHERE p.id = :id)""",
             {"id": int(pedido_id)},
         )
-
+        notificar_pedido(pedido_id)
 
 @strawberry.type
 class ResultadoPago:

@@ -3,6 +3,7 @@ from typing import AsyncGenerator, List, Optional
 
 import strawberry
 
+from notificaciones import notificar_pedido
 from db import consultar, ejecutar
 from auth import requerir_admin
 from jwt_service import decodificar
@@ -152,4 +153,5 @@ class AdminMutations:
             "UPDATE pedidos SET status = CAST(:status AS status_pedido_enum) WHERE id = :id RETURNING *",
             {"status": nuevo, "id": int(id)},
         )
+        notificar_pedido(id)
         return crear_pedido(filas[0])
