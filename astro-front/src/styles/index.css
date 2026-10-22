@@ -1188,3 +1188,31 @@ button.adminBtn:disabled:hover {
 .discogsManual { align-self: flex-start; }
 .discogsCredito { margin: 0; font-size: 12px; opacity: .6; }
 .discogsCredito a { color: inherit; }
+
+/* ===== Mis pedidos ===== */
+.misPedidos { width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.misPedidos h2 { margin: 0; }
+.mpNota { margin: -8px 0 0; font-size: 13px; opacity: .65; }
+.mpTarjeta { border: 1px solid #ddd; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #fff; }
+.mpCabecera { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mpCabecera > div { display: flex; flex-direction: column; gap: 2px; }
+.mpFecha { font-size: 13px; opacity: .65; }
+.mpEstado { padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #fff; }
+.mpPENDIENTE { background: #d9a400; }
+.mpPAGADO { background: #2e7d32; }
+.mpENVIADO { background: #1565c0; }
+.mpCANCELADO { background: #c62828; }
+.mpProgreso { list-style: none; margin: 0; padding: 0; display: flex; }
+.mpProgreso li { flex: 1; text-align: center; font-size: 12px; padding-top: 10px; border-top: 4px solid #ddd; opacity: .55; }
+.mpProgreso li.hecho { border-top-color: #e2541d; opacity: 1; font-weight: 600; }
+.mpCancelado { margin: 0; color: #c62828; font-weight: 600; }
+.mpDatos p { margin: 2px 0; font-size: 14px; overflow-wrap: anywhere; }
+.mpLineas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.mpLineas li { display: flex; align-items: center; gap: 12px; }
+.mpPortada { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.mpVinilo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mpVinilo strong, .mpVinilo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mpVinilo span { font-size: 13px; opacity: .7; }
+.mpCantidad { font-size: 14px; opacity: .75; }
+.mpPrecio { font-weight: 600; min-width: 90px; text-align: right; }
+.mpTotal { text-align: right; border-top: 1px solid #eee; padding-top: 10px; }

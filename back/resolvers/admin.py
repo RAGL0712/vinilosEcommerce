@@ -27,16 +27,16 @@ def requerir_admin_ws(info):
     return datos
 
 
-# Consulta la BD cada 2s y solo emite cuando algo cambio.
-async def en_vivo(sql, crear):
+# Consulta la BD cada "cada" segundos y solo emite cuando algo cambio.
+async def en_vivo(sql, crear, params=None, cada=2):
     ultima = None
     while True:
-        filas = await consultar(sql)
+        filas = await consultar(sql, params) if params else await consultar(sql)
         firma = repr([dict(f) for f in filas])
         if firma != ultima:
             ultima = firma
             yield [crear(f) for f in filas]
-        await asyncio.sleep(2)
+        await asyncio.sleep(cada)
 
 
 # ---------- INPUTS ----------
