@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { initMercadoPago, CardPayment } from '@mercadopago/sdk-react'
-import { gqlAuth, obtenerCarrito } from '../lib/api.js'
+import { gqlAuth, obtenerCarrito, getSession } from '../lib/api.js'
 
 initMercadoPago(import.meta.env.PUBLIC_MP_PUBLIC_KEY, { locale: 'es-MX' })
 
@@ -19,7 +19,11 @@ export default function Checkout() {
   const [ciudadFija, setCiudadFija] = useState(false)
 
   useEffect(() => {
-    obtenerCarrito().then(setCart).catch((e) => setError(e.message))
+  obtenerCarrito().then(setCart).catch((e) => setError(e.message))
+  const s = getSesion()
+  if (s?.usuario) {
+    setForm((f) => ({ ...f, email: f.email || s.usuario.email, nombre: f.nombre || s.usuario.nombre }))
+  }
   }, [])
 
     const buscarCP = async (cp) => {
@@ -148,7 +152,7 @@ export default function Checkout() {
           )}
           {!resultado && (
             <CardPayment
-              initialization={{ amount: pedido.monto }}
+              initialization={{ amount: pedido.monto, payer: { email: form.email || getSesion()?.usuario?.email || '' } }}
               customization={{ paymentMethods: { maxInstallments: 1 } }}
               onSubmit={pagar}
               onError={(e) => console.error('Brick:', e)}
