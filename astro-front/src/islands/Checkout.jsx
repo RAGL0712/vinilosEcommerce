@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { initMercadoPago, CardPayment } from '@mercadopago/sdk-react'
-import { gqlAuth, obtenerCarrito, getSession } from '../lib/api.js'
+import { gql, gqlAuth, obtenerCarrito, marcarCarritoNuevo, urlImagen, getSesion } from '../lib/api.js'
 
 initMercadoPago(import.meta.env.PUBLIC_MP_PUBLIC_KEY, { locale: 'es-MX' })
 
