@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getSesion, gql, gqlAuth, suscribir, IMAGEN_DEFECTO, urlImagen, imagenCarga, comprimirImagen, subirImagen, aSpotifyUri } from '../lib/api.js'
 import Img from '../components/Img.jsx'
-import SpotifyPlayer from '../components/SpotifyPlayer.jsx'
 import BuscadorDiscogs from '../components/BuscadorDiscogs.jsx'
 
 const j = JSON.stringify
@@ -254,11 +253,14 @@ function Productos() {
               </label>
               {f.spotify.trim() && !aSpotifyUri(f.spotify) && <p style={{ color: 'red', margin: 0 }}>El link de Spotify no es valido</p>}
               {aSpotifyUri(f.spotify) && (
-                <SpotifyPlayer
-                  uri={aSpotifyUri(f.spotify)}
-                  titulo={f.titulo || 'Vista previa'}
-                  artista={f.artista}
-                  portada={archivo ? archivo.preview : urlImagen(f.imagen_url)}
+                  <iframe
+                  title="Vista previa de Spotify"
+                  src={`https://open.spotify.com/embed/${aSpotifyUri(f.spotify).split(':').slice(1).join('/')}`}
+                  width="100%"
+                  height="152"
+                  style={{ border: 0, borderRadius: 12 }}
+                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                  loading="lazy"
                 />
               )}
               <label>Categoria
