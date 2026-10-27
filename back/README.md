@@ -20,6 +20,7 @@ DB_CONFIG=postgresql+asyncpg:// USUARIO : CONTRASEÑA @localhost:5433/vinillosEc
 cd back
 python3 -m venv venv
 source venv/bin/activate
+pip install mcp
 pip install uvicorn fastapi sqlalchemy[asyncio]
 pip install -r requirements.txt
 python crear_usuarios.py

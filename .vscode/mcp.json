@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "vinillos1": {
+      "type": "stdio",
+      "command": "${workspaceFolder}\\back\\venv\\Scripts\\python.exe",
+      "args": ["${workspaceFolder}\\back\\mcp_server.py"],
+      "cwd": "${workspaceFolder}\\back",
+      "envFile": "${workspaceFolder}\\back\\.env.mcp"
+    }
+  }
+}
