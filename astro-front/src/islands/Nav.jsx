@@ -29,9 +29,9 @@ export default function Nav() {
   return (
     <>
       <header className="topbar">
-        <span className="menuIcon" onClick={() => setAbierto(true)}>☰</span>
+        <button type="button" className="menuIcon" onClick={() => setAbierto(true)} aria-label="Abrir menu">☰</button>
         <img src="/logo.webp" className="topbarLogo" alt="Logo" />
-        <h1>{enPanel ? 'DASHBOARD' : ' VINILO '}</h1>
+        <span className="topbarMarca">{enPanel ? 'DASHBOARD' : ' VINILO '}</span>
         <a className="cartIcon" href="/carrito">
           <img src="https://cdn-icons-png.flaticon.com/512/565/565375.png" alt="Carrito" width="24" height="24" />
           {notificacion && <span className="cartDot" />}

@@ -4,18 +4,33 @@ import Nav from '../islands/Nav.jsx'
 const {
   titulo = 'VINILO',
   publico = false,
-  descripcion = 'VINILO: tienda en línea de discos de vinilo. Explora el catálogo por categoría, compra con Mercado Pago o PayPal y recibe envío gratis en compras a partir de $1800.'
+  descripcion = 'VINILO: tienda en línea de discos de vinilo. Explora el catálogo por categoría, compra con Mercado Pago o PayPal y recibe envío gratis en compras a partir de $1800.',
+  imagen = '/heroImg1.webp',
+  tipoOg = 'website',
 } = Astro.props
+const canonical = new URL(Astro.url.pathname, Astro.site).href
+const imagenAbs = new URL(imagen, Astro.site).href
 ---
 <!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{titulo}</title>
     <meta name="description" content={descripcion} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content={tipoOg} />
+    <meta property="og:site_name" content="VINILO" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={imagenAbs} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet" />
     <link rel="icon" href="/logo.webp" />
-    <title>{titulo}</title>
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <slot name="head" />
   </head>
   <body>
     {!publico && <Nav client:load />}

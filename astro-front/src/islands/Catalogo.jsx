@@ -21,8 +21,8 @@ export default function Catalogo() {
 
   return (
     <main className="mainSection">
-      <h2>Vinilos</h2>
-      <input type="text" placeholder="Buscar" className="searchInput" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+      <h1 className="tituloSeccion">Vinilos</h1>
+      <input type="text" placeholder="Buscar" aria-label="Buscar vinilos por titulo o artista" className="searchInput" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
       {estado && <p>{estado}</p>}
       <Tarjetas productos={filtrados} />
     </main>

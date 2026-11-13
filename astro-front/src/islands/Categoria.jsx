@@ -20,7 +20,7 @@ export default function Categoria() {
 
   return (
     <>
-      <h2>Categoria: {nombre}</h2>
+      <h1 className="tituloSeccion">Categoria: {nombre}</h1>
       {estado && <p>{estado}</p>}
       <Tarjetas productos={productos} />
     </>

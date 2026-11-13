@@ -26,6 +26,36 @@ export default function Producto() {
       .catch((e) => setError(e.message))
   }, [])
 
+  // SEO: titulo de la pagina y datos estructurados (JSON-LD Product) del disco
+  useEffect(() => {
+    if (!p) return
+    document.title = `${p.titulo} - ${p.artista} | VINILO`.slice(0, 60)
+    const datos = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: p.titulo,
+      image: [urlImagen(p.imagen_url)],
+      description: `Disco de vinilo ${p.titulo} de ${p.artista}.`,
+      sku: String(p.id),
+      brand: { '@type': 'Brand', name: p.artista },
+      category: p.categoria?.nombre,
+      offers: {
+        '@type': 'Offer',
+        url: location.href,
+        priceCurrency: 'MXN',
+        price: Number(p.precio).toFixed(2),
+        itemCondition: 'https://schema.org/NewCondition',
+        availability: Number(p.stock) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      },
+    }
+    document.getElementById('jsonld-producto')?.remove()
+    const s = document.createElement('script')
+    s.type = 'application/ld+json'
+    s.id = 'jsonld-producto'
+    s.textContent = JSON.stringify(datos)
+    document.head.appendChild(s)
+  }, [p])
+
   const agregar = async () => {
     setGuardando(true)
     try {
@@ -61,7 +91,7 @@ export default function Producto() {
   return (
     <div className="productDetail">
       <div className="productImageContainer">
-        <Img src={p.imagen_url} alt={p.titulo} className="productImage" />
+        <Img src={p.imagen_url} alt={`Portada del vinilo ${p.titulo} de ${p.artista}`} className="productImage" width={600} height={600} fetchPriority="high" />
         <SpotifyPlayer
           uri={p.spotify_uri}
           titulo={p.titulo}
@@ -73,7 +103,7 @@ export default function Producto() {
       <div className="productInfo">
         <span className="productArtist">{p.artista}</span>
         <h1 className="productTitle">{p.titulo}</h1>
-        <h1>${p.precio}</h1>
+        <p className="productPrecio">${p.precio}</p>
         <p className="productStock">Stock: {p.stock}</p>
 
         {cantidad === 0 ? (

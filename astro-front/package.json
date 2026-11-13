@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@astrojs/react": "^4.0.0",
+    "@astrojs/sitemap": "^3.7.5",
     "@mercadopago/sdk-react": "^1.0.7",
     "astro": "^5.0.0",
     "react": "^19.0.0",

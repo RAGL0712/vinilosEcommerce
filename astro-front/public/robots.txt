@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /backoffice
+Disallow: /carrito
+Disallow: /checkout
+Disallow: /mis-pedidos
+
+Sitemap: https://vinilosecommerce.netlify.app/sitemap-index.xml
