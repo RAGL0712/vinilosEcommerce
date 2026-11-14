@@ -1,6 +1,7 @@
 ---
 import '../styles/index.css'
 import Nav from '../islands/Nav.jsx'
+import { pwaInfo } from 'virtual:pwa-info'
 const {
   titulo = 'VINILO',
   publico = false,
@@ -29,8 +30,15 @@ const imagenAbs = new URL(imagen, Astro.site).href
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet" />
     <link rel="icon" href="/logo.webp" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#000000" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <slot name="head" />
+    {pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
+    <script>
+      import { registerSW } from 'virtual:pwa-register'
+      registerSW({ immediate: true })
+    </script>
   </head>
   <body>
     {!publico && <Nav client:load />}

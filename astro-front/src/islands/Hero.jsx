@@ -12,5 +12,5 @@ export default function Hero() {
     return () => clearInterval(t)
   }, [])
 
-  return <img src={imgs[i]} className="heroImg" alt="" width={1200} height={400} fetchPriority="high" />
+  return <img src={imgs[i]} className="heroImg" alt="Discos de vinilo" width="1600" height="400" fetchPriority="high" decoding="async" />
 }
