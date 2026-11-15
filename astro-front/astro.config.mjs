@@ -17,6 +17,10 @@ export default defineConfig({
       filter: (page) => !PRIVADAS.some((ruta) => new URL(page).pathname.startsWith(ruta)),
     }),
     AstroPWA({
+      // Service Worker propio: src/sw.js
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
       includeAssets: ['logo.webp', 'icons/apple-touch-icon.png'],
       manifest: {
@@ -35,19 +39,10 @@ export default defineConfig({
           { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ]
       },
-      workbox: {
-        navigateFallback: null,
-        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'paginas',
-              networkTimeoutSeconds: 4
-            }
-          }
-        ]
+      injectManifest: {
+        // Archivos del shell que se guardan al instalar
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,ico}'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024
       },
       devOptions: {
         enabled: false

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { suscribir } from '../lib/api.js'
+import { notificar } from '../lib/offline.js'
 import Img from '../components/Img.jsx'
 
 const Q_MIS_PEDIDOS = `subscription { misPedidosEnVivo {
@@ -29,10 +30,30 @@ export default function MisPedidos() {
   const [pedidos, setPedidos] = useState(null)
   const [error, setError] = useState('')
 
+  const anteriores = useRef(null) // estado de cada pedido en el aviso anterior
+
   useEffect(() => {
     const cancelar = suscribir(
       Q_MIS_PEDIDOS,
-      (d) => { setPedidos(d.misPedidosEnVivo); setError('') },
+      (d) => {
+        const lista = d.misPedidosEnVivo
+        // Si un pedido cambio de estado, avisar con una notificacion
+        if (anteriores.current) {
+          lista.forEach((p) => {
+            const antes = anteriores.current[p.id]
+            if (antes && antes !== p.status) {
+              notificar(`Pedido #${p.id}: ${TEXTO[p.status] || p.status}`, {
+                body: p.status === 'ENVIADO' ? 'Tu pedido va en camino.' : `Tu pedido cambió a "${TEXTO[p.status] || p.status}".`,
+                tag: `pedido-${p.id}`,
+                data: { url: '/mis-pedidos' },
+              })
+            }
+          })
+        }
+        anteriores.current = Object.fromEntries(lista.map((p) => [p.id, p.status]))
+        setPedidos(lista)
+        setError('')
+      },
       (e) => setError('No se pudieron cargar tus pedidos: ' + e)
     )
     return cancelar

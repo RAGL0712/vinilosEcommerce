@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { gql, gqlAuth, obtenerCarrito, marcarCarritoNuevo, urlImagen } from '../lib/api.js'
+import { guardarPendiente } from '../lib/offline.js'
 import Img from '../components/Img.jsx'
 import SpotifyPlayer from '../components/SpotifyPlayer.jsx'
 
@@ -58,12 +59,20 @@ export default function Producto() {
 
   const agregar = async () => {
     setGuardando(true)
+    const query = `mutation { agregarAlCarrito(productoId: "${p.id}", cantidad: 1) }`
     try {
-      await gqlAuth(`mutation { agregarAlCarrito(productoId: "${p.id}", cantidad: 1) }`)
+      await gqlAuth(query)
       setCantidad(1)
       marcarCarritoNuevo()
     } catch (e) {
-      alert('Error: ' + e.message)
+      const sinRed = !navigator.onLine || e instanceof TypeError || e.message.startsWith('Sin conexión')
+      if (sinRed) {
+        // Background Sync: se guarda y se envia solo cuando vuelva el internet
+        await guardarPendiente({ query, titulo: p.titulo })
+        alert(`Sin conexión: guardamos "${p.titulo}" y lo agregaremos a tu carrito en cuanto vuelva el internet.`)
+      } else {
+        alert('Error: ' + e.message)
+      }
     }
     setGuardando(false)
   }

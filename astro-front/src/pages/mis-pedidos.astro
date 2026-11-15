@@ -1,9 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro'
 import MisPedidos from '../islands/MisPedidos.jsx'
+import BotonNotificaciones from '../components/BotonNotificaciones.jsx'
 ---
-<Layout>
+<Layout titulo="Mis pedidos | VINILO">
   <div class="productContainer">
-    <MisPedidos client:only="react" />
+    <div class="misPedidosPagina">
+      <BotonNotificaciones client:only="react" />
+      <MisPedidos client:only="react" />
+    </div>
   </div>
 </Layout>

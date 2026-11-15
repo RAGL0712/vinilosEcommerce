@@ -1253,3 +1253,25 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .botonInstalar + .cartIcon {
   margin-left: 0;
 }
+
+/* ===== Offline y notificaciones ===== */
+.avisoSinRed {
+  background: #fff3cd;
+  color: #000000;
+  border-bottom: 1px solid #e0c36a;
+  padding: 10px 20px;
+  font-size: 14px;
+  text-align: center;
+}
+.misPedidosPagina { width: 100%; max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.botonNotif {
+  align-self: flex-start;
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+.avisoNotif { margin: 0; font-size: 14px; color: #333333; }

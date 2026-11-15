@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getSesion, gql, cerrarSesion } from '../lib/api.js'
+import EstadoRed from '../components/EstadoRed.jsx'
 import BotonInstalar from '../components/BotonInstalar.jsx'
 
 export default function Nav() {
@@ -39,7 +40,7 @@ export default function Nav() {
           {notificacion && <span className="cartDot" />}
         </a>
       </header>
-
+      <EstadoRed />
       <aside className={`sidebar ${abierto ? 'open' : ''}`}>
         <div className="sidebarHeader">
           <h2>Menu</h2>
