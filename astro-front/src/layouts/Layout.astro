@@ -33,6 +33,18 @@ const imagenAbs = new URL(imagen, Astro.site).href
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="theme-color" content="#000000" />
     <link rel="sitemap" href="/sitemap-index.xml" />
+    <script is:inline>
+      // Atrapa el evento de instalacion antes de que React cargue
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault()
+        window.__eventoInstalar = e
+        window.dispatchEvent(new Event('vinilo-instalable'))
+      })
+      window.addEventListener('appinstalled', () => {
+        window.__eventoInstalar = null
+        window.dispatchEvent(new Event('vinilo-instalada'))
+      })
+    </script>
     <slot name="head" />
     {pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
     <script>

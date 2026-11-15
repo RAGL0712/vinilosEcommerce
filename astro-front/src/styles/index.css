@@ -1237,6 +1237,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .tarjetaTitulo { font-size: 1.17em; }
 
 .botonInstalar {
+  margin-left: auto;   /* empuja el boton (y el carrito) a la derecha */
+  margin-right: 20px;  /* espacio entre el boton y el carrito */
   background: #000;
   color: #fff;
   border: none;
@@ -1245,5 +1247,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   font: inherit;
   font-size: 14px;
   cursor: pointer;
-  margin-right: 12px;
+}
+
+/* Cuando el boton esta visible, el carrito va justo despues de el */
+.botonInstalar + .cartIcon {
+  margin-left: 0;
 }
