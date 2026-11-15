@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getSesion, gql, cerrarSesion } from '../lib/api.js'
+import BotonInstalar from '../components/BotonInstalar.jsx'
 
 export default function Nav() {
   const [abierto, setAbierto] = useState(false)
@@ -32,6 +33,7 @@ export default function Nav() {
         <button type="button" className="menuIcon" onClick={() => setAbierto(true)} aria-label="Abrir menu">☰</button>
         <img src="/logo.webp" className="topbarLogo" alt="Logo" />
         <span className="topbarMarca">{enPanel ? 'DASHBOARD' : ' VINILO '}</span>
+        <BotonInstalar />
         <a className="cartIcon" href="/carrito">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Carrito"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" /></svg>
           {notificacion && <span className="cartDot" />}
