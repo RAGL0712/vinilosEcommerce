@@ -30,10 +30,11 @@ export function sinLocale(pathname = '/') {
 // '/producto/' -> '/producto' (la raiz '/' se queda igual)
 export const sinBarraFinal = (ruta) => (ruta.length > 1 ? ruta.replace(/\/+$/, '') : ruta)
 
-// url('en', '/producto') -> '/en/producto' | url('es', '/producto') -> '/producto'
-// (prefixDefaultLocale: false: el español no lleva prefijo)
+// url('en', '/producto') -> '/en/producto/' | url('es', '/producto') -> '/producto/'
+// La "/" final evita la redireccion 301 de Netlify (/producto -> /producto/)
 export function url(locale, path = '/') {
-  const p = path.startsWith('/') ? path : '/' + path
+  let p = path.startsWith('/') ? path : '/' + path
+  if (!p.endsWith('/')) p += '/'
   if (locale === DEFAULT_LOCALE) return p
   return p === '/' ? `/${locale}/` : `/${locale}${p}`
 }
