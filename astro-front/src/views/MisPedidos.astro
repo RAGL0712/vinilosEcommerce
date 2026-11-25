@@ -1,0 +1,16 @@
+---
+import Layout from '../layouts/Layout.astro'
+import MisPedidos from '../islands/MisPedidos.jsx'
+import BotonNotificaciones from '../components/BotonNotificaciones.jsx'
+import { t, DEFAULT_LOCALE } from '../i18n/index.js'
+const locale = Astro.currentLocale ?? DEFAULT_LOCALE
+const ui = t(locale)
+---
+<Layout titulo={ui.meta.pedidos.titulo}>
+  <div class="productContainer">
+    <div class="misPedidosPagina">
+      <BotonNotificaciones client:only="react" locale={locale} />
+      <MisPedidos client:only="react" locale={locale} />
+    </div>
+  </div>
+</Layout>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { t } from '../i18n/index.js'
 
 // Carga el iFrame API de Spotify una sola vez para toda la pagina
 let apiSpotify = null
@@ -32,7 +33,8 @@ const IconoPausa = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z" /></svg>
 )
 
-export default function SpotifyPlayer({ uri, titulo, artista, portada, etiquetas = [] }) {
+export default function SpotifyPlayer({ uri, titulo, artista, portada, etiquetas = [], locale = 'es' }) {
+  const ui = t(locale)
   const contenedor = useRef(null)
   const controller = useRef(null)
   const [listo, setListo] = useState(false)
@@ -105,18 +107,18 @@ export default function SpotifyPlayer({ uri, titulo, artista, portada, etiquetas
 
       <div className="timeline">
         <div className="controllers">
-          <button type="button" onClick={() => mover(-10)} disabled={!listo} aria-label="Retroceder 10 segundos"><IconoAtras /></button>
-          <button type="button" className="play" onClick={() => controller.current && controller.current.togglePlay()} disabled={!listo} aria-label={reproduciendo ? 'Pausar' : 'Reproducir'}>
+          <button type="button" onClick={() => mover(-10)} disabled={!listo} aria-label={ui.player.atras}><IconoAtras /></button>
+          <button type="button" className="play" onClick={() => controller.current && controller.current.togglePlay()} disabled={!listo} aria-label={reproduciendo ? ui.player.pausar : ui.player.reproducir}>
             {reproduciendo ? <IconoPausa /> : <IconoPlay />}
           </button>
-          <button type="button" onClick={() => mover(10)} disabled={!listo} aria-label="Adelantar 10 segundos"><IconoAdelante /></button>
+          <button type="button" onClick={() => mover(10)} disabled={!listo} aria-label={ui.player.adelante}><IconoAdelante /></button>
         </div>
         <div className="soundline" onClick={saltarA}>
           <div style={{ width: `${progreso}%` }} />
         </div>
         <div className="tiempos">
           <span>{mmss(estado.posicion)}</span>
-          <span>{listo ? mmss(estado.duracion) : 'Cargando...'}</span>
+          <span>{listo ? mmss(estado.duracion) : ui.cargando}</span>
         </div>
       </div>
 

@@ -5,5 +5,8 @@ Disallow: /backoffice
 Disallow: /carrito
 Disallow: /checkout
 Disallow: /mis-pedidos
+Disallow: /en/carrito
+Disallow: /en/checkout
+Disallow: /en/mis-pedidos
 
 Sitemap: https://vinilosecommerce.netlify.app/sitemap-index.xml

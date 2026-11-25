@@ -1,13 +1,4 @@
 ---
-import Layout from '../layouts/Layout.astro'
-import AuthForm from '../islands/AuthForm.jsx'
+import Vista from '../views/Acceso.astro'
 ---
-<Layout titulo="Login" publico>
-  <div class="loginContainer">
-    <div class="brandT">
-      <img src="/logo.webp" class="topbarLogo" alt="Logo" />
-      <h1>VINILO</h1>
-    </div>
-    <AuthForm client:load />
-  </div>
-</Layout>
+<Vista />

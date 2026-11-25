@@ -1,0 +1,12 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Checkout from '../islands/Checkout.jsx'
+import { t, DEFAULT_LOCALE } from '../i18n/index.js'
+const locale = Astro.currentLocale ?? DEFAULT_LOCALE
+const ui = t(locale)
+---
+<Layout titulo={ui.meta.checkout.titulo}>
+  <div class="productContainer">
+    <Checkout client:only="react" locale={locale} />
+  </div>
+</Layout>

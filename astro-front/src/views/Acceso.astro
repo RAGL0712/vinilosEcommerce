@@ -1,0 +1,22 @@
+---
+// Login y registro comparten vista (registro = crear cuenta)
+import Layout from '../layouts/Layout.astro'
+import AuthForm from '../islands/AuthForm.jsx'
+import SelectorIdioma from '../components/SelectorIdioma.jsx'
+import { t, sinLocale, sinBarraFinal, DEFAULT_LOCALE } from '../i18n/index.js'
+const { registro = false } = Astro.props
+const locale = Astro.currentLocale ?? DEFAULT_LOCALE
+const ui = t(locale)
+---
+<Layout titulo={registro ? ui.meta.registro.titulo : ui.meta.login.titulo} publico>
+  <div class="loginContainer">
+    <div class="idiomaPublico">
+      <SelectorIdioma client:load locale={locale} ruta={sinBarraFinal(sinLocale(Astro.url.pathname))} />
+    </div>
+    <div class="brandT">
+      <img src="/logo.webp" class="topbarLogo" alt={ui.nav.logo} width="35" height="35" />
+      <h1>VINILO</h1>
+    </div>
+    <AuthForm client:load registro={registro} locale={locale} />
+  </div>
+</Layout>

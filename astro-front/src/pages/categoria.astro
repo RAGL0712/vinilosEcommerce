@@ -1,10 +1,4 @@
 ---
-import Layout from '../layouts/Layout.astro'
-import Categoria from '../islands/Categoria.jsx'
+import Vista from '../views/Categoria.astro'
 ---
-<Layout titulo="Vinilos por categoría | VINILO" descripcion="Explora los discos de vinilo de VINILO por categoría: OST, rock, pop, jazz, electrónica y más. Precios en pesos y envío gratis desde $1800.">
-  <div class="productContainer">
-    <a class="backBtn" href="/">← Volver</a>
-    <Categoria client:load />
-  </div>
-</Layout>
+<Vista />

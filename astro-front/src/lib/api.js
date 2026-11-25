@@ -1,3 +1,5 @@
+import { localeDePath, url } from '../i18n/index.js'
+
 export const URL_API = import.meta.env.DEV
   ? 'http://localhost:4000/'
   : 'https://vinilo-api.onrender.com/'
@@ -30,7 +32,7 @@ async function refrescar() {
     guardarSesion(d.refrescarToken)
   } catch {
     localStorage.removeItem('sesion')
-    location.href = '/login'
+    location.href = url(localeDePath(location.pathname), '/login')
   }
 }
 
@@ -61,7 +63,7 @@ export async function cerrarSesion() {
   }
   localStorage.removeItem('carritoNuevo')
   localStorage.removeItem('sesion')
-  location.href = '/login'
+  location.href = url(localeDePath(location.pathname), '/login')
 }
 
 export async function obtenerCarrito() {

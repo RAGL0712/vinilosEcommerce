@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { gql, guardarSesion, getSesion } from '../lib/api.js'
+import { t, url } from '../i18n/index.js'
 
 function IconoOjo({ abierto }) {
   return abierto ? (
@@ -17,7 +18,7 @@ function IconoOjo({ abierto }) {
   )
 }
 
-function CampoPassword({ label, name, value, onChange }) {
+function CampoPassword({ label, name, value, onChange, ui }) {
   const [visible, setVisible] = useState(false)
   return (
     <div>
@@ -35,8 +36,8 @@ function CampoPassword({ label, name, value, onChange }) {
           type="button"
           className="ojoBtn"
           onClick={() => setVisible(!visible)}
-          aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-          title={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          aria-label={visible ? ui.auth.ocultar : ui.auth.mostrar}
+          title={visible ? ui.auth.ocultar : ui.auth.mostrar}
         >
           <IconoOjo abierto={visible} />
         </button>
@@ -46,14 +47,15 @@ function CampoPassword({ label, name, value, onChange }) {
 }
 
 // registro=false -> login, registro=true -> crear cuenta
-export default function AuthForm({ registro = false }) {
+export default function AuthForm({ registro = false, locale = 'es' }) {
+  const ui = t(locale)
   const [form, setForm] = useState({ nombre: '', email: '', password: '', confirmar: '' })
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
 
   useEffect(() => {
     const s = getSesion()
-    if (s) location.href = s.usuario.rol === 'ADMIN' ? '/admin' : '/'
+    if (s) location.href = s.usuario.rol === 'ADMIN' ? '/admin' : url(locale, '/')
   }, [])
 
   const cambiar = (e) => setForm({ ...form, [e.target.name]: e.target.value })
@@ -64,7 +66,7 @@ export default function AuthForm({ registro = false }) {
     e.preventDefault()
     setError('')
     if (registro && form.password !== form.confirmar) {
-      setError('Las contraseñas no coinciden')
+      setError(ui.auth.noCoinciden)
       return
     }
     setCargando(true)
@@ -74,7 +76,7 @@ export default function AuthForm({ registro = false }) {
       }
       const d = await gql(`mutation { login(datos: { email: "${form.email}", password: "${form.password}" }) { accessToken refreshToken usuario { id nombre email rol } } }`)
       guardarSesion(d.login)
-      location.href = d.login.usuario.rol === 'ADMIN' ? '/admin' : '/'
+      location.href = d.login.usuario.rol === 'ADMIN' ? '/admin' : url(locale, '/')
     } catch (err) {
       setError(err.message)
       setCargando(false)
@@ -82,28 +84,28 @@ export default function AuthForm({ registro = false }) {
   }
 
   return (
-    <form className="logForm" onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '400px', margin: '3rem auto' }}>
-      <h2>{registro ? 'Crear Cuenta' : 'Iniciar Sesion'}</h2>
+    <form className="logForm" onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <h2>{registro ? ui.auth.crear : ui.auth.iniciar}</h2>
       {registro && (
-        <div><label>Nombre</label><input type="text" name="nombre" required className="inputCO" value={form.nombre} onChange={cambiar} /></div>
+        <div><label>{ui.auth.nombre}</label><input type="text" name="nombre" required className="inputCO" value={form.nombre} onChange={cambiar} /></div>
       )}
-      <div><label>Correo Electronico</label><input type="email" name="email" required className="inputCO" value={form.email} onChange={cambiar} /></div>
+      <div><label>{ui.auth.correo}</label><input type="email" name="email" required className="inputCO" value={form.email} onChange={cambiar} /></div>
 
-      <CampoPassword label="Contraseña" name="password" value={form.password} onChange={cambiar} />
+      <CampoPassword ui={ui} label={ui.auth.password} name="password" value={form.password} onChange={cambiar} />
 
       {registro && (
         <>
-          <CampoPassword label="Confirmar contraseña" name="confirmar" value={form.confirmar} onChange={cambiar} />
-          {noCoinciden && <p style={{ color: 'red', margin: 0 }}>Las contraseñas no coinciden</p>}
+          <CampoPassword ui={ui} label={ui.auth.confirmar} name="confirmar" value={form.confirmar} onChange={cambiar} />
+          {noCoinciden && <p style={{ color: 'red', margin: 0 }}>{ui.auth.noCoinciden}</p>}
         </>
       )}
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <button type="submit" className="backBtn" disabled={cargando || noCoinciden}>
-        {cargando ? 'Cargando...' : registro ? 'Registrarme' : 'Entrar'}
+        {cargando ? ui.auth.cargando : registro ? ui.auth.registrarme : ui.auth.entrar}
       </button>
-      <a href={registro ? '/login' : '/registro'} className="backBtn" style={{ textAlign: 'center', textDecoration: 'none' }}>
-        {registro ? 'Ya tengo cuenta' : 'Crear cuenta nueva'}
+      <a href={url(locale, registro ? '/login' : '/registro')} className="backBtn" style={{ textAlign: 'center', textDecoration: 'none' }}>
+        {registro ? ui.auth.yaTengo : ui.auth.crearNueva}
       </a>
     </form>
   )

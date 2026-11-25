@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { gql, gqlAuth, obtenerCarrito, marcarCarritoNuevo, urlImagen } from '../lib/api.js'
 import { guardarPendiente } from '../lib/offline.js'
+import { t } from '../i18n/index.js'
 import Img from '../components/Img.jsx'
 import SpotifyPlayer from '../components/SpotifyPlayer.jsx'
 
-export default function Producto() {
+export default function Producto({ locale = 'es' }) {
+  const ui = t(locale)
   const [p, setP] = useState(null)
   const [cantidad, setCantidad] = useState(0) // 0 = todavía no le das "Agregar"
   const [guardando, setGuardando] = useState(false)
@@ -36,7 +38,7 @@ export default function Producto() {
       '@type': 'Product',
       name: p.titulo,
       image: [urlImagen(p.imagen_url)],
-      description: `Disco de vinilo ${p.titulo} de ${p.artista}.`,
+      description: ui.producto.descripcionSEO(p.titulo, p.artista),
       sku: String(p.id),
       brand: { '@type': 'Brand', name: p.artista },
       category: p.categoria?.nombre,
@@ -68,10 +70,10 @@ export default function Producto() {
       const sinRed = !navigator.onLine || e instanceof TypeError || e.message.startsWith('Sin conexión')
       if (sinRed) {
         // Background Sync: se guarda y se envia solo cuando vuelva el internet
-        await guardarPendiente({ query, titulo: p.titulo })
-        alert(`Sin conexión: guardamos "${p.titulo}" y lo agregaremos a tu carrito en cuanto vuelva el internet.`)
+        await guardarPendiente({ query, titulo: p.titulo, idioma: locale })
+        alert(ui.producto.sinConexion(p.titulo))
       } else {
-        alert('Error: ' + e.message)
+        alert(ui.error + e.message)
       }
     }
     setGuardando(false)
@@ -86,13 +88,13 @@ export default function Producto() {
       if (n > cantidad) marcarCarritoNuevo()
       setCantidad(n)
     } catch (e) {
-      alert('Error: ' + e.message)
+      alert(ui.error + e.message)
     }
     setGuardando(false)
   }
 
-  if (error) return <p>Error: {error}</p>
-  if (!p) return <p>Cargando...</p>
+  if (error) return <p>{ui.error}{error}</p>
+  if (!p) return <p>{ui.cargando}</p>
 
   const stock = Number(p.stock)
   const sinStock = stock <= 0
@@ -100,24 +102,25 @@ export default function Producto() {
   return (
     <div className="productDetail">
       <div className="productImageContainer">
-        <Img src={p.imagen_url} alt={`Portada del vinilo ${p.titulo} de ${p.artista}`} className="productImage" width={600} height={600} fetchPriority="high" />
+        <Img src={p.imagen_url} alt={ui.producto.portada(p.titulo, p.artista)} className="productImage" width={600} height={600} fetchPriority="high" />
         <SpotifyPlayer
+          locale={locale}
           uri={p.spotify_uri}
           titulo={p.titulo}
           artista={p.artista}
           portada={urlImagen(p.imagen_url)}
-          etiquetas={[p.categoria?.nombre, 'Vinilo'].filter(Boolean)}
+          etiquetas={[p.categoria?.nombre, ui.producto.etiqueta].filter(Boolean)}
         />
       </div>
       <div className="productInfo">
         <span className="productArtist">{p.artista}</span>
         <h1 className="productTitle">{p.titulo}</h1>
         <p className="productPrecio">${p.precio}</p>
-        <p className="productStock">Stock: {p.stock}</p>
+        <p className="productStock">{ui.producto.stock} {p.stock}</p>
 
         {cantidad === 0 ? (
           <button className="addCartBtn" onClick={agregar} disabled={sinStock || guardando}>
-            {sinStock ? 'Sin stock' : 'Agregar al Carrito'}
+            {sinStock ? ui.producto.sinStock : ui.producto.agregar}
           </button>
         ) : (
           <>
@@ -127,7 +130,7 @@ export default function Producto() {
               <button onClick={() => cambiarCantidad(cantidad + 1)} disabled={cantidad >= stock || guardando}>+</button>
             </div>
             <p className="contadorAviso">
-              {cantidad >= stock ? 'Llegaste al máximo disponible' : 'En tu carrito'}
+              {cantidad >= stock ? ui.producto.maximo : ui.producto.enCarrito}
             </p>
           </>
         )}

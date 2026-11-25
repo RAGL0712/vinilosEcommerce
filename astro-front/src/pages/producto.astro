@@ -1,10 +1,4 @@
 ---
-import Layout from '../layouts/Layout.astro'
-import Producto from '../islands/Producto.jsx'
+import Vista from '../views/Producto.astro'
 ---
-<Layout titulo="Detalle del vinilo | VINILO" descripcion="Detalle del disco de vinilo en VINILO: portada, artista, precio, existencias y vista previa en Spotify. Agrégalo a tu carrito." tipoOg="product">
-  <div class="productContainer">
-    <a class="backBtn" href="/">← Volver al catalogo</a>
-    <Producto client:load />
-  </div>
-</Layout>
+<Vista />

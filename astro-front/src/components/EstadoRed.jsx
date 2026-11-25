@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { marcarCarritoNuevo } from '../lib/api.js'
 import { enviarPendientesDesdePagina } from '../lib/offline.js'
+import { t } from '../i18n/index.js'
 
 // Aviso de "sin conexion" y reenvio de lo pendiente al volver la red
-export default function EstadoRed() {
+export default function EstadoRed({ locale = 'es' }) {
   const [enLinea, setEnLinea] = useState(true)
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export default function EstadoRed() {
   if (enLinea) return null
   return (
     <div className="avisoSinRed" role="status" aria-live="polite">
-      Sin conexión: estás viendo la versión guardada. Lo que no hayas visitado antes no estará disponible.
+      {t(locale).sinRed}
     </div>
   )
 }

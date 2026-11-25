@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Categoria from '../islands/Categoria.jsx'
+import { t, url, DEFAULT_LOCALE } from '../i18n/index.js'
+const locale = Astro.currentLocale ?? DEFAULT_LOCALE
+const ui = t(locale)
+---
+<Layout titulo={ui.meta.categoria.titulo} descripcion={ui.meta.categoria.descripcion}>
+  <div class="productContainer">
+    <a class="backBtn" href={url(locale, '/')}>{ui.categoria.volver}</a>
+    <Categoria client:load locale={locale} />
+  </div>
+</Layout>

@@ -6,15 +6,28 @@ import AstroPWA from '@vite-pwa/astro'
 // Paginas privadas que no deben aparecer en el sitemap
 const PRIVADAS = ['/admin', '/backoffice', '/carrito', '/checkout', '/mis-pedidos', '/login', '/registro']
 
+// Quita el prefijo de idioma ('/en/carrito' -> '/carrito') para comparar con PRIVADAS
+const sinPrefijo = (ruta) => ruta.replace(/^\/en(?=\/|$)/, '') || '/'
+
 export default defineConfig({
   site: 'https://vinilosecommerce.netlify.app',
   build: {
     inlineStylesheets: 'always'
   },
+  // i18n nativo de Astro: espanol sin prefijo (/producto) e ingles con prefijo (/en/producto)
+  i18n: {
+    defaultLocale: 'es',
+    locales: ['es', 'en'],
+    routing: {
+      prefixDefaultLocale: false
+    }
+  },
   integrations: [
     react(),
     sitemap({
-      filter: (page) => !PRIVADAS.some((ruta) => new URL(page).pathname.startsWith(ruta)),
+      // Agrega los <xhtml:link hreflang> entre la version es y la en de cada pagina
+      i18n: { defaultLocale: 'es', locales: { es: 'es', en: 'en' } },
+      filter: (page) => !PRIVADAS.some((ruta) => sinPrefijo(new URL(page).pathname).startsWith(ruta)),
     }),
     AstroPWA({
       // Service Worker propio: src/sw.js
@@ -28,6 +41,7 @@ export default defineConfig({
         short_name: 'VINILO',
         description: 'Tienda en línea de discos de vinilo.',
         lang: 'es',
+        id: '/',
         start_url: '/',
         scope: '/',
         display: 'standalone',

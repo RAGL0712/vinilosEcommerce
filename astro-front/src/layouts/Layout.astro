@@ -2,30 +2,44 @@
 import '../styles/index.css'
 import Nav from '../islands/Nav.jsx'
 import { pwaInfo } from 'virtual:pwa-info'
+import { LOCALES, DEFAULT_LOCALE, HREFLANG, OG_LOCALE, t, url, sinLocale, sinBarraFinal } from '../i18n/index.js'
+
+// Astro.currentLocale sale de la ruta: /producto -> 'es', /en/producto -> 'en'
+const locale = Astro.currentLocale ?? DEFAULT_LOCALE
+const ui = t(locale)
 const {
   titulo = 'VINILO',
   publico = false,
-  descripcion = 'VINILO: tienda en línea de discos de vinilo. Explora el catálogo por categoría, compra con Mercado Pago o PayPal y recibe envío gratis en compras a partir de $1800.',
+  descripcion = ui.meta.descripcionDefault,
   imagen = '/heroImg1.webp',
   tipoOg = 'website',
 } = Astro.props
 const canonical = new URL(Astro.url.pathname, Astro.site).href
 const imagenAbs = new URL(imagen, Astro.site).href
+
+// La misma pagina en cada idioma (para <link rel="alternate" hreflang>)
+const ruta = sinLocale(Astro.url.pathname)
+const alternos = LOCALES.map((l) => ({ l, href: new URL(url(l, ruta), Astro.site).href }))
+const xDefault = new URL(url(DEFAULT_LOCALE, ruta), Astro.site).href
 ---
 <!doctype html>
-<html lang="es">
+<html lang={locale}>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{titulo}</title>
     <meta name="description" content={descripcion} />
     <link rel="canonical" href={canonical} />
+    {alternos.map(({ l, href }) => <link rel="alternate" hreflang={HREFLANG[l]} href={href} />)}
+    <link rel="alternate" hreflang="x-default" href={xDefault} />
     <meta property="og:type" content={tipoOg} />
     <meta property="og:site_name" content="VINILO" />
     <meta property="og:title" content={titulo} />
     <meta property="og:description" content={descripcion} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={imagenAbs} />
+    <meta property="og:locale" content={OG_LOCALE[locale]} />
+    {LOCALES.filter((l) => l !== locale).map((l) => <meta property="og:locale:alternate" content={OG_LOCALE[l]} />)}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet" />
@@ -38,22 +52,27 @@ const imagenAbs = new URL(imagen, Astro.site).href
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault()
         window.__eventoInstalar = e
+        try { localStorage.removeItem('viniloInstalada'); localStorage.setItem('viniloInstalable', '1') } catch (err) {}
         window.dispatchEvent(new Event('vinilo-instalable'))
       })
       window.addEventListener('appinstalled', () => {
         window.__eventoInstalar = null
+        try { localStorage.removeItem('viniloInstalable'); localStorage.setItem('viniloInstalada', '1') } catch (err) {}
         window.dispatchEvent(new Event('vinilo-instalada'))
       })
     </script>
     <slot name="head" />
-    {pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
+    {/* Manifiesto por idioma: la app instalada se llama y abre en el idioma de la pagina */}
+    {locale === DEFAULT_LOCALE
+      ? pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} />
+      : <link rel="manifest" href={`/manifest-${locale}.webmanifest`} />}
     <script>
       import { registerSW } from 'virtual:pwa-register'
       registerSW({ immediate: true })
     </script>
   </head>
   <body>
-    {!publico && <Nav client:load />}
+    {!publico && <Nav client:load locale={locale} ruta={sinBarraFinal(ruta)} />}
     <slot />
   </body>
 </html>

@@ -15,6 +15,34 @@ const CACHES_VIGENTES = [CACHE_SHELL, CACHE_PAGINAS, CACHE_ASSETS, CACHE_DATOS]
 
 const APIS = ['https://vinilo-api.onrender.com', 'http://localhost:4000']
 const OFFLINE = '/offline.html'
+
+/* Textos del SW por idioma (el SW no usa la interfaz, tiene su propio mini diccionario) */
+const TXT = {
+  es: {
+    carritoTitulo: 'Carrito actualizado',
+    carritoCuerpo: (t) => `"${t}" ya está en tu carrito.`,
+    errorTitulo: 'No se pudo agregar',
+    accionSinRed: 'Sin conexión: esta acción necesita internet.',
+    datosSinGuardar: 'Sin conexión: esta información todavía no está guardada. Ábrela una vez con internet para poder verla sin conexión.',
+    imagenNoGuardada: 'Imagen no guardada',
+    sinConexion: 'Sin conexión',
+  },
+  en: {
+    carritoTitulo: 'Cart updated',
+    carritoCuerpo: (t) => `"${t}" is now in your cart.`,
+    errorTitulo: "Couldn't add it",
+    accionSinRed: "You're offline: this action needs internet.",
+    datosSinGuardar: "You're offline: this information isn't saved yet. Open it once with internet to see it offline.",
+    imagenNoGuardada: 'Image not saved',
+    sinConexion: 'Offline',
+  },
+}
+// Idioma de la pagina que hizo la peticion (/en/... -> 'en')
+const idiomaDe = (req) => {
+  try { return new URL(req.referrer || req.url).pathname.startsWith('/en') ? 'en' : 'es' } catch { return 'es' }
+}
+// '/carrito' -> '/en/carrito' si el idioma es ingles (el espanol no lleva prefijo)
+const rutaIdioma = (idioma, ruta) => (idioma === 'en' ? '/en' + (ruta === '/' ? '/' : ruta) : ruta)
 const MAX_ASSETS = 150
 
 // 'index.html' -> '/', 'producto/index.html' -> '/producto/'
@@ -92,7 +120,7 @@ async function cacheFirst(req, nombreCache) {
     }
     return res
   } catch {
-    if (req.destination === 'image') return imagenSinRed()
+    if (req.destination === 'image') return imagenSinRed(idiomaDe(req))
     return Response.error()
   }
 }
@@ -124,7 +152,7 @@ async function datosNetworkFirst(req) {
 
   if (!esLectura || !esPublica) {
     try { return await fetch(req) } catch {
-      return respuestaSinRed('Sin conexión: esta acción necesita internet.')
+      return respuestaSinRed(TXT[idiomaDe(req)].accionSinRed)
     }
   }
 
@@ -138,9 +166,7 @@ async function datosNetworkFirst(req) {
     }
     return res
   } catch {
-    return (await caches.match(clave)) || respuestaSinRed(
-      'Sin conexión: esta información todavía no está guardada. Ábrela una vez con internet para poder verla sin conexión.'
-    )
+    return (await caches.match(clave)) || respuestaSinRed(TXT[idiomaDe(req)].datosSinGuardar)
   }
 }
 
@@ -160,6 +186,8 @@ async function enviarPendientes() {
   let faltoRed = false
 
   for (const item of lista) {
+    const idioma = item.idioma === 'en' ? 'en' : 'es' // idioma en que se guardo el pendiente
+    const tx = TXT[idioma]
     try {
       const res = await fetch(item.api, {
         method: 'POST',
@@ -168,12 +196,12 @@ async function enviarPendientes() {
       })
       const r = await res.json()
       if (!r.errors) {
-        await avisar('Carrito actualizado', `"${item.titulo}" ya está en tu carrito.`, '/carrito', 'carrito')
+        await avisar(tx.carritoTitulo, tx.carritoCuerpo(item.titulo), rutaIdioma(idioma, '/carrito'), 'carrito')
         await avisarPestanas({ tipo: 'carrito-actualizado' })
       } else if (r.errors[0].message.includes('TOKEN_EXPIRADO')) {
         devolver.push(item) // la pagina lo enviara con una sesion nueva
       } else {
-        await avisar('No se pudo agregar', `"${item.titulo}": ${r.errors[0].message}`, '/carrito', 'carrito-error')
+        await avisar(tx.errorTitulo, `"${item.titulo}": ${r.errors[0].message}`, rutaIdioma(idioma, '/carrito'), 'carrito-error')
       }
     } catch {
       faltoRed = true
@@ -233,11 +261,11 @@ function respuestaSinRed(mensaje) {
   })
 }
 
-function imagenSinRed() {
+function imagenSinRed(idioma = 'es') {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
 <rect width="300" height="300" fill="#eeeeee"/>
-<text x="150" y="145" font-family="Arial" font-size="18" text-anchor="middle" fill="#555555">Imagen no guardada</text>
-<text x="150" y="172" font-family="Arial" font-size="14" text-anchor="middle" fill="#777777">Sin conexión</text></svg>`
+<text x="150" y="145" font-family="Arial" font-size="18" text-anchor="middle" fill="#555555">${TXT[idioma].imagenNoGuardada}</text>
+<text x="150" y="172" font-family="Arial" font-size="14" text-anchor="middle" fill="#777777">${TXT[idioma].sinConexion}</text></svg>`
   return new Response(svg, { headers: { 'Content-Type': 'image/svg+xml' } })
 }
 

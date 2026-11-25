@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Producto from '../islands/Producto.jsx'
+import { t, url, DEFAULT_LOCALE } from '../i18n/index.js'
+const locale = Astro.currentLocale ?? DEFAULT_LOCALE
+const ui = t(locale)
+---
+<Layout titulo={ui.meta.producto.titulo} descripcion={ui.meta.producto.descripcion} tipoOg="product">
+  <div class="productContainer">
+    <a class="backBtn" href={url(locale, '/')}>{ui.producto.volver}</a>
+    <Producto client:load locale={locale} />
+  </div>
+</Layout>

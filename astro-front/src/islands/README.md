@@ -13,5 +13,7 @@ Cada archivo de esta carpeta es una isla: se monta en una pagina con una directi
 | Checkout.jsx | checkout | client:load |
 | AuthForm.jsx | login, registro | client:load |
 
+Todas las islas reciben `locale` (`'es'` o `'en'`) desde la vista de Astro y toman sus textos de `src/i18n/ui.js`.
+
 `components/Tarjetas.jsx` NO es una isla: es un componente auxiliar que usan Catalogo y Categoria.
 Todo lo que no esta aqui (info-bar, footer, encabezados) es HTML estatico de Astro.

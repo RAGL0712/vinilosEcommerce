@@ -1,0 +1,26 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Hero from '../islands/Hero.jsx'
+import Catalogo from '../islands/Catalogo.jsx'
+import { t, DEFAULT_LOCALE } from '../i18n/index.js'
+const locale = Astro.currentLocale ?? DEFAULT_LOCALE
+const ui = t(locale)
+---
+<Layout titulo={ui.meta.inicio.titulo} descripcion={ui.meta.inicio.descripcion}>
+  <Hero client:idle locale={locale} />
+  <Catalogo client:load locale={locale} />
+
+  <section class="info-bar">
+    <div class="info-item">
+      <p class="info-title">{ui.inicio.envioTitulo}</p>
+      <p class="info-subtitle">{ui.inicio.envioTexto}</p>
+    </div>
+    <div class="info-divider"></div>
+    <div class="info-item">
+      <p class="info-title">{ui.inicio.pagoTitulo}</p>
+      <p class="info-subtitle">{ui.inicio.pagoTexto}</p>
+    </div>
+  </section>
+
+  <footer class="footer">Vinillos Practica 6 ©</footer>
+</Layout>

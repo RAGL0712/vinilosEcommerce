@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro'
+import Carrito from '../islands/Carrito.jsx'
+import { t, DEFAULT_LOCALE } from '../i18n/index.js'
+const locale = Astro.currentLocale ?? DEFAULT_LOCALE
+const ui = t(locale)
+---
+<Layout titulo={ui.meta.carrito.titulo}>
+  <div class="productContainer">
+    <h1 class="tituloCarrito">{ui.carrito.titulo}</h1>
+    <Carrito client:load locale={locale} />
+  </div>
+</Layout>

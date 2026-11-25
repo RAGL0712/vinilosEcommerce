@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react'
 import { initMercadoPago, CardPayment } from '@mercadopago/sdk-react'
 import { gql, gqlAuth, obtenerCarrito, marcarCarritoNuevo, urlImagen, getSesion } from '../lib/api.js'
+import { t, url, FORMATO } from '../i18n/index.js'
 
-initMercadoPago(import.meta.env.PUBLIC_MP_PUBLIC_KEY, { locale: 'es-MX' })
+// Mercado Pago se inicia una sola vez, con el idioma de la pagina ('es-MX' o 'en-US')
+let mpIniciado = false
 
-export default function Checkout() {
+export default function Checkout({ locale = 'es' }) {
+  const ui = t(locale)
+  if (!mpIniciado) {
+    initMercadoPago(import.meta.env.PUBLIC_MP_PUBLIC_KEY, { locale: FORMATO[locale] })
+    mpIniciado = true
+  }
   const [cart, setCart] = useState(null)
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -64,8 +71,8 @@ export default function Checkout() {
 
   const verificarDireccion = async () => {
     setErrorDireccion('')
-    if (!/^\d{5}$/.test(form.cp) || !form.estado) { setErrorDireccion('Escribe un codigo postal valido'); return }
-    if (!form.calle.trim()) { setErrorDireccion('Escribe la calle y el numero'); return }
+    if (!/^\d{5}$/.test(form.cp) || !form.estado) { setErrorDireccion(ui.checkout.cpInvalido); return }
+    if (!form.calle.trim()) { setErrorDireccion(ui.checkout.calleVacia); return }
     setVerificando(true)
     const texto = [form.calle, form.colonia, form.ciudad, form.estado].filter((x) => x && x.trim()).join(', ')
     try {
@@ -83,7 +90,7 @@ export default function Checkout() {
   const crearPedido = async (e) => {
     e.preventDefault()
     if (!verificada) {
-      setErrorDireccion('Primero verifica tu direccion')
+      setErrorDireccion(ui.checkout.verificaPrimero)
       return
     }
     setEnviando(true)
@@ -93,7 +100,7 @@ export default function Checkout() {
       const t = d.crearPedido.total
       setPedido({ id: d.crearPedido.id, monto: t + (t >= 1800 ? 0 : 150) })
     } catch (err) {
-      alert('Error: ' + err.message)
+      alert(ui.error + err.message)
     }
     setEnviando(false)
   }
@@ -115,15 +122,15 @@ export default function Checkout() {
     }
   }
 
-  if (error) return <p>Error: {error}</p>
-  if (!cart) return <p>Cargando...</p>
+  if (error) return <p>{ui.error}{error}</p>
+  if (!cart) return <p>{ui.cargando}</p>
 
   // Resultado final (aprobado o en revisión)
   if (resultado && ['approved', 'in_process', 'pending'].includes(resultado.status)) {
     return (
       <div style={{ textAlign: 'center', padding: '5rem 2rem' }}>
         <h1 style={{ marginBottom: '2rem' }}>{resultado.detalle}</h1>
-        <a className="backBtn" href="/">Seguir comprando</a>
+        <a className="backBtn" href={url(locale, '/')}>{ui.checkout.seguir}</a>
       </div>
     )
   }
@@ -131,8 +138,8 @@ export default function Checkout() {
   if (cart.length === 0 && !pedido) {
     return (
       <div>
-        <p>Tu carrito esta vacio.</p>
-        <a className="primaryBtn" href="/">Ir al Catalogo</a>
+        <p>{ui.checkout.carritoVacio}</p>
+        <a className="primaryBtn" href={url(locale, '/')}>{ui.checkout.irCatalogo}</a>
       </div>
     )
   }
@@ -142,12 +149,12 @@ export default function Checkout() {
     return (
       <div className="cartLayout">
         <div className="cartList">
-          <h2>Pago con tarjeta</h2>
-          <p>Pedido #{pedido.id} — Total: $ {pedido.monto}</p>
+          <h2>{ui.checkout.pagoTarjeta}</h2>
+          <p>{ui.checkout.pedidoTotal(pedido.id, pedido.monto)}</p>
           {resultado && (
             <div style={{ margin: '1rem 0' }}>
               <p style={{ color: 'red' }}>{resultado.detalle}</p>
-              <button className="backBtn" onClick={() => setResultado(null)}>Intentar con otra tarjeta</button>
+              <button className="backBtn" onClick={() => setResultado(null)}>{ui.checkout.otraTarjeta}</button>
             </div>
           )}
           {!resultado && (
@@ -170,27 +177,27 @@ export default function Checkout() {
   return (
     <div className="cartLayout">
       <form className="cartList" onSubmit={crearPedido} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <h2>Datos de Envio</h2>
-        <div><label>Nombre Completo</label><input type="text" name="nombre" required className="inputCO" value={form.nombre} onChange={cambiar} /></div>
-        <div><label>Correo Electronico</label><input type="email" name="email" required className="inputCO" placeholder="Aqui te enviaremos el seguimiento de tu pedido" value={form.email} onChange={cambiar} /></div>
+        <h2>{ui.checkout.datosEnvio}</h2>
+        <div><label>{ui.checkout.nombre}</label><input type="text" name="nombre" required className="inputCO" value={form.nombre} onChange={cambiar} /></div>
+        <div><label>{ui.checkout.correo}</label><input type="email" name="email" required className="inputCO" placeholder={ui.checkout.correoAyuda} value={form.email} onChange={cambiar} /></div>
 
         <div className="filaDireccion">
           <div>
-            <label>Codigo postal</label>
+            <label>{ui.checkout.cp}</label>
             <input type="text" inputMode="numeric" name="cp" required className="inputCO" placeholder="44100" maxLength={5} value={form.cp} onChange={cambiar} />
           </div>
           <div>
-            <label>Pais</label>
-            <input type="text" className="inputCO campoAuto" value={buscandoCP ? 'Buscando...' : form.pais} placeholder="Se llena con el C.P." readOnly tabIndex={-1} />
+            <label>{ui.checkout.pais}</label>
+            <input type="text" className="inputCO campoAuto" value={buscandoCP ? ui.checkout.buscando : form.pais} placeholder={ui.checkout.seLlena} readOnly tabIndex={-1} />
           </div>
         </div>
         <div className="filaDireccion">
           <div>
-            <label>Estado</label>
-            <input type="text" className="inputCO campoAuto" value={form.estado} placeholder="Se llena con el C.P." readOnly tabIndex={-1} />
+            <label>{ui.checkout.estado}</label>
+            <input type="text" className="inputCO campoAuto" value={form.estado} placeholder={ui.checkout.seLlena} readOnly tabIndex={-1} />
           </div>
           <div>
-            <label>Ciudad / Municipio</label>
+            <label>{ui.checkout.ciudad}</label>
               <input
               type="text"
               name="ciudad"
@@ -199,29 +206,29 @@ export default function Checkout() {
               onChange={cambiar}
               readOnly={ciudadFija}
               tabIndex={ciudadFija ? -1 : 0}
-              placeholder={form.estado && !ciudadFija ? 'Escribe tu ciudad o municipio' : 'Se llena con el C.P.'}
+              placeholder={form.estado && !ciudadFija ? ui.checkout.escribeCiudad : ui.checkout.seLlena}
             />
           </div>
         </div>
 
         <div>
-          <label>Colonia</label>
+          <label>{ui.checkout.colonia}</label>
           <input type="text" name="colonia" className="inputCO" list="listaColonias" placeholder="Centro" value={form.colonia} onChange={cambiar} />
           <datalist id="listaColonias">
             {colonias.map((c) => <option key={c} value={c} />)}
           </datalist>
         </div>
-        <div><label>Calle y numero</label><input type="text" name="calle" required className="inputCO" placeholder="Av. Juarez 123" value={form.calle} onChange={cambiar} /></div>
+        <div><label>{ui.checkout.calle}</label><input type="text" name="calle" required className="inputCO" placeholder="Av. Juarez 123" value={form.calle} onChange={cambiar} /></div>
 
         <button type="button" className="backBtn" onClick={verificarDireccion} disabled={verificando || buscandoCP}>
-          {verificando ? 'Verificando...' : verificada ? 'Direccion verificada ✓' : 'Verificar direccion'}
+          {verificando ? ui.checkout.verificando : verificada ? ui.checkout.verificada : ui.checkout.verificar}
         </button>
         {errorDireccion && <p style={{ color: 'red', margin: 0 }}>{errorDireccion}</p>}
         {verificada && (
           <div className="direccionVerificada">
-            <p><strong>Se entregara en:</strong> {verificada.direccion}</p>
+            <p><strong>{ui.checkout.seEntregaEn}</strong> {verificada.direccion}</p>
             <iframe
-              title="Mapa de entrega"
+              title={ui.checkout.mapa}
               src={`https://maps.google.com/maps?q=${verificada.lat},${verificada.lng}&z=16&output=embed`}
               loading="lazy"
             />
@@ -229,7 +236,7 @@ export default function Checkout() {
         )}
 
         <button type="submit" className="pagarBtn" disabled={enviando || !verificada} style={{ marginTop: '1.5rem', width: '100%' }}>
-          {enviando ? 'Espera...' : verificada ? `Continuar al pago $ ${total}` : 'Verifica tu direccion para continuar'}
+          {enviando ? ui.checkout.espera : verificada ? ui.checkout.continuar(total) : ui.checkout.verificaContinuar}
         </button>
       </form>
     </div>

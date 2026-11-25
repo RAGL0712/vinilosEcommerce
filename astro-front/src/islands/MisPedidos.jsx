@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { suscribir } from '../lib/api.js'
 import { notificar } from '../lib/offline.js'
+import { t, url, FORMATO } from '../i18n/index.js'
 import Img from '../components/Img.jsx'
 
 const Q_MIS_PEDIDOS = `subscription { misPedidosEnVivo {
@@ -9,13 +10,14 @@ const Q_MIS_PEDIDOS = `subscription { misPedidosEnVivo {
 } }`
 
 const PASOS = ['PENDIENTE', 'PAGADO', 'ENVIADO']
-const TEXTO = { PENDIENTE: 'Pendiente de pago', PAGADO: 'Pagado', ENVIADO: 'Enviado', CANCELADO: 'Cancelado' }
 
-const dinero = (n) => '$' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const fecha = (iso) => new Date(iso).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })
+// Numeros y fechas segun el idioma de la pagina (es-MX / en-US)
+const dinero = (n, locale) => '$' + Number(n).toLocaleString(FORMATO[locale], { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const fecha = (iso, locale) => new Date(iso).toLocaleString(FORMATO[locale], { dateStyle: 'medium', timeStyle: 'short' })
 
-function Progreso({ status }) {
-  if (status === 'CANCELADO') return <p className="mpCancelado">Este pedido fue cancelado.</p>
+function Progreso({ status, ui }) {
+  const TEXTO = ui.pedidos.estados
+  if (status === 'CANCELADO') return <p className="mpCancelado">{ui.pedidos.cancelado}</p>
   const actual = PASOS.indexOf(status)
   return (
     <ol className="mpProgreso">
@@ -26,7 +28,9 @@ function Progreso({ status }) {
   )
 }
 
-export default function MisPedidos() {
+export default function MisPedidos({ locale = 'es' }) {
+  const ui = t(locale)
+  const TEXTO = ui.pedidos.estados
   const [pedidos, setPedidos] = useState(null)
   const [error, setError] = useState('')
 
@@ -42,10 +46,10 @@ export default function MisPedidos() {
           lista.forEach((p) => {
             const antes = anteriores.current[p.id]
             if (antes && antes !== p.status) {
-              notificar(`Pedido #${p.id}: ${TEXTO[p.status] || p.status}`, {
-                body: p.status === 'ENVIADO' ? 'Tu pedido va en camino.' : `Tu pedido cambió a "${TEXTO[p.status] || p.status}".`,
+              notificar(`${ui.pedidos.pedido} #${p.id}: ${TEXTO[p.status] || p.status}`, {
+                body: p.status === 'ENVIADO' ? ui.pedidos.enCamino : ui.pedidos.cambio(TEXTO[p.status] || p.status),
                 tag: `pedido-${p.id}`,
-                data: { url: '/mis-pedidos' },
+                data: { url: url(locale, '/mis-pedidos') },
               })
             }
           })
@@ -54,42 +58,42 @@ export default function MisPedidos() {
         setPedidos(lista)
         setError('')
       },
-      (e) => setError('No se pudieron cargar tus pedidos: ' + e)
+      (e) => setError(ui.pedidos.errorCarga + e)
     )
     return cancelar
   }, [])
 
   if (error) return <p>{error}</p>
-  if (!pedidos) return <p>Cargando tus pedidos...</p>
+  if (!pedidos) return <p>{ui.pedidos.cargando}</p>
   if (pedidos.length === 0) {
     return (
       <div className="misPedidos">
-        <h2>Mis pedidos</h2>
-        <p>Aun no tienes pedidos. <a href="/">Ir a la tienda</a></p>
+        <h2>{ui.pedidos.titulo}</h2>
+        <p>{ui.pedidos.vacio} <a href={url(locale, '/')}>{ui.pedidos.irTienda}</a></p>
       </div>
     )
   }
 
   return (
     <div className="misPedidos">
-      <h2>Mis pedidos</h2>
-      <p className="mpNota">Se actualiza solo cuando cambia el estado de tu pedido.</p>
+      <h2>{ui.pedidos.titulo}</h2>
+      <p className="mpNota">{ui.pedidos.nota}</p>
       {pedidos.map((p) => (
         <article key={p.id} className="mpTarjeta">
           <header className="mpCabecera">
             <div>
-              <strong>Pedido #{p.id}</strong>
-              <span className="mpFecha">{fecha(p.fecha)}</span>
+              <strong>{ui.pedidos.pedido} #{p.id}</strong>
+              <span className="mpFecha">{fecha(p.fecha, locale)}</span>
             </div>
             <span className={`mpEstado mp${p.status}`}>{TEXTO[p.status] || p.status}</span>
           </header>
 
-          <Progreso status={p.status} />
+          <Progreso status={p.status} ui={ui} />
 
           <div className="mpDatos">
-            <p><b>Recibe:</b> {p.nombreCliente}</p>
-            <p><b>Correo:</b> {p.email}</p>
-            <p><b>Direccion:</b> {p.direccion}</p>
+            <p><b>{ui.pedidos.recibe}</b> {p.nombreCliente}</p>
+            <p><b>{ui.pedidos.correo}</b> {p.email}</p>
+            <p><b>{ui.pedidos.direccion}</b> {p.direccion}</p>
           </div>
 
           <ul className="mpLineas">
@@ -101,12 +105,12 @@ export default function MisPedidos() {
                   <span>{l.producto.artista}</span>
                 </div>
                 <span className="mpCantidad">x{l.cantidad}</span>
-                <span className="mpPrecio">{dinero(l.precioUnitario * l.cantidad)}</span>
+                <span className="mpPrecio">{dinero(l.precioUnitario * l.cantidad, locale)}</span>
               </li>
             ))}
           </ul>
 
-          <footer className="mpTotal">Total: <strong>{dinero(p.total)}</strong></footer>
+          <footer className="mpTotal">{ui.pedidos.total} <strong>{dinero(p.total, locale)}</strong></footer>
         </article>
       ))}
     </div>

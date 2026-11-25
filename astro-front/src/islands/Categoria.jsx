@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { gql } from '../lib/api.js'
+import { t } from '../i18n/index.js'
 import Tarjetas from '../components/Tarjetas.jsx'
 
-export default function Categoria() {
+export default function Categoria({ locale = 'es' }) {
+  const ui = t(locale)
   const [nombre, setNombre] = useState('')
   const [productos, setProductos] = useState([])
-  const [estado, setEstado] = useState('Cargando...')
+  const [estado, setEstado] = useState(ui.cargando)
 
   useEffect(() => {
     const p = new URLSearchParams(location.search)
@@ -15,14 +17,14 @@ export default function Categoria() {
         setProductos(d.obtenerProductosPorCategoria)
         setEstado('')
       })
-      .catch((e) => setEstado('Error: ' + e.message))
+      .catch((e) => setEstado(ui.error + e.message))
   }, [])
 
   return (
     <>
-      <h1 className="tituloSeccion">Categoria: {nombre}</h1>
+      <h1 className="tituloSeccion">{ui.categoria.titulo(nombre)}</h1>
       {estado && <p>{estado}</p>}
-      <Tarjetas productos={productos} />
+      <Tarjetas productos={productos} locale={locale} />
     </>
   )
 }

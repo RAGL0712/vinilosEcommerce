@@ -1,4 +1,5 @@
 import { URL_API, getSesion, gqlAuth, marcarCarritoNuevo } from './api.js'
+import { t, url, localeDePath } from '../i18n/index.js'
 
 /* Cola de acciones hechas sin red (IndexedDB). El Service Worker la envia
    con Background Sync cuando vuelve la conexion. */
@@ -24,10 +25,10 @@ function enTransaccion(bd, accion) {
 }
 
 // Guarda la accion y agenda el envio para cuando vuelva la red
-export async function guardarPendiente({ query, titulo }) {
+export async function guardarPendiente({ query, titulo, idioma = localeDePath(location.pathname) }) {
   const bd = await abrirBD()
   await enTransaccion(bd, (t) =>
-    t.add({ query, titulo, token: getSesion()?.accessToken || '', api: URL_API, creado: Date.now() })
+    t.add({ query, titulo, idioma, token: getSesion()?.accessToken || '', api: URL_API, creado: Date.now() })
   )
   await programarEnvio()
 }
@@ -61,10 +62,11 @@ export async function enviarPendientesDesdePagina() {
     try {
       await gqlAuth(item.query)
       marcarCarritoNuevo()
-      await notificar('Carrito actualizado', { body: `"${item.titulo}" ya está en tu carrito.`, tag: 'carrito', data: { url: '/carrito' } })
+      const n = t(item.idioma || 'es').notif
+      await notificar(n.carritoTitulo, { body: n.carritoCuerpo(item.titulo), tag: 'carrito', data: { url: url(item.idioma || 'es', '/carrito') } })
     } catch (e) {
       if (e instanceof TypeError || e.message.startsWith('Sin conexión')) devolver.push(item)
-      else await notificar('No se pudo agregar', { body: `"${item.titulo}": ${e.message}`, tag: 'carrito-error', data: { url: '/carrito' } })
+      else await notificar(t(item.idioma || 'es').notif.errorTitulo, { body: `"${item.titulo}": ${e.message}`, tag: 'carrito-error', data: { url: url(item.idioma || 'es', '/carrito') } })
     }
   }
   if (devolver.length) await enTransaccion(bd, (t) => devolver.forEach((i) => t.put(i)))
