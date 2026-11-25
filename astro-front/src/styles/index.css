@@ -1396,3 +1396,4 @@ select:focus-visible {
   /* Sin el rebote de "jalar para recargar" que no existe en una app */
   html { overscroll-behavior-y: none; }
 }
+
