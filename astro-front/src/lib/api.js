@@ -184,3 +184,6 @@ export function aSpotifyUri(texto) {
   const m = String(texto || '').trim().match(/(?:spotify:|open\.spotify\.com\/(?:intl-[a-z-]+\/)?)(album|track|playlist)[:/]([A-Za-z0-9]{22})/)
   return m ? `spotify:${m[1]}:${m[2]}` : null
 }
+
+// Consulta del catalogo del home (el SW la guarda; la ficha la usa como respaldo sin red)
+export const Q_CATALOGO = 'query { obtenerProductos { id titulo artista precio imagen_url stock } }'

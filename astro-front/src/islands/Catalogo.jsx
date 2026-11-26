@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { gql } from '../lib/api.js'
+import { gql, Q_CATALOGO } from '../lib/api.js'
 import { t } from '../i18n/index.js'
 import Tarjetas from '../components/Tarjetas.jsx'
 
@@ -10,7 +10,7 @@ export default function Catalogo({ locale = 'es' }) {
   const [estado, setEstado] = useState(ui.cargando)
 
   useEffect(() => {
-    gql('query { obtenerProductos { id titulo artista precio imagen_url stock } }')
+    gql(Q_CATALOGO)
       .then((d) => {
         setProductos(d.obtenerProductos)
         setEstado('')

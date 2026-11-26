@@ -66,6 +66,9 @@ export const ui = {
       etiqueta: 'Vinilo',
       descripcionSEO: (t, a) => `Disco de vinilo ${t} de ${a}.`,
       sinConexion: (t) => `Sin conexión: guardamos "${t}" y lo agregaremos a tu carrito en cuanto vuelva el internet.`,
+      reproductorNoDisponible: 'Reproductor no disponible sin conexión',
+      compraNoDisponible: 'Compra no disponible sin conexión',
+      vistaPrevia: 'Estás sin conexión: esta es una vista previa guardada. El precio, el stock y la compra estarán disponibles cuando vuelva el internet.',
     },
     player: {
       atras: 'Retroceder 10 segundos',
@@ -227,6 +230,9 @@ export const ui = {
       etiqueta: 'Vinyl',
       descripcionSEO: (t, a) => `Vinyl record ${t} by ${a}.`,
       sinConexion: (t) => `You're offline: we saved "${t}" and will add it to your cart as soon as the internet is back.`,
+      reproductorNoDisponible: 'Player not available offline',
+      compraNoDisponible: 'Purchase not available offline',
+      vistaPrevia: "You're offline: this is a saved preview. Price, stock and checkout will be available when the internet is back.",
     },
     player: {
       atras: 'Rewind 10 seconds',
